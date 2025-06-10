@@ -9,6 +9,15 @@ class Slot extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'service_id',
+        'user_id',
+        'current_members',
+        'duration',
+        'status',
+        'expires_at'
+    ];
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'creator_id');

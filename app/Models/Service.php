@@ -9,6 +9,16 @@ class Service extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name',
+        'description',
+        'logo',
+        'price',
+        'max_members',
+        'duration',
+        'is_active'
+    ];
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'creator_id');
