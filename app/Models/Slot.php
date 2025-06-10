@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Slot extends Model
 {
@@ -18,18 +20,24 @@ class Slot extends Model
         'expires_at'
     ];
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'creator_id');
-    }
+    protected $casts = [
+        'expires_at' => 'date',
+        'current_members' => 'integer',
+        'duration' => 'integer'
+    ];
 
-    public function members()
-    {
-        return $this->hasMany(SlotMember::class);
-    }
-
-    public function service()
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(SlotMember::class);
     }
 }

@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\ServiceController;
 use App\Http\Controllers\Api\User\SlotController;
+use App\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,12 +25,27 @@ Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPass
 Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOTP']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+// Guest slot routes (no auth required)
+Route::post('/slots/{id}/join-as-guest', [SlotController::class, 'joinAsGuest']);
+Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGuestPayment']);
+
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/delete-account', [AuthController::class, 'delete']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+    // Payment routes
+    Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment']);
+    Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+    // Slot routes
+    Route::post('/slots/add', [SlotController::class, 'create']);
+    Route::post('/slots/confirm-payment', [SlotController::class, 'confirmPayment']);
+    Route::get('/slot/{id}', [SlotController::class, 'show']);
+    Route::put('/update/{id}', [SlotController::class, 'update']);
+    Route::delete('/delete/{id}', [SlotController::class, 'destroy']);
+    Route::get('/slots', [SlotController::class, 'index']);
+    
 });
 
 // Service routes
@@ -46,11 +62,5 @@ Route::prefix('services')->group(function () {
     });
 });
 
-// Slot routes
-Route::prefix('slots')->middleware(['auth:sanctum', 'user'])->group(function () {
-    Route::get('/', [SlotController::class, 'index']);
-    Route::post('/create', [SlotController::class, 'store']);
-    Route::get('/{id}', [SlotController::class, 'show']);
-    Route::put('/update/{id}', [SlotController::class, 'update']);
-    Route::delete('/delete/{id}', [SlotController::class, 'destroy']);
-});
+// Paystack webhook (no auth required)
+Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);

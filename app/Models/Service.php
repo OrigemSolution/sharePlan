@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Service extends Model
 {
@@ -19,12 +20,18 @@ class Service extends Model
         'is_active'
     ];
 
+    protected $casts = [
+        'price' => 'decimal:2',
+        'is_active' => 'boolean',
+        'max_members' => 'integer'
+    ];
+
     public function creator()
     {
         return $this->belongsTo(User::class, 'creator_id');
     }
 
-    public function slots()
+    public function slots(): HasMany
     {
         return $this->hasMany(Slot::class);
     }
