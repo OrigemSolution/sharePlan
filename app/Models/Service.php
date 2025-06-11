@@ -17,7 +17,8 @@ class Service extends Model
         'price',
         'max_members',
         'duration',
-        'is_active'
+        'is_active',
+        'creator_id'
     ];
 
     protected $casts = [

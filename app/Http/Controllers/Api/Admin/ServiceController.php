@@ -15,7 +15,24 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        $services = Service::latest()->get();
+        $services = Service::with(['slots' => function($query) {
+                $query->select('id', 'service_id', 'user_id')
+                    ->with('creator:id,name');
+            }])
+            ->withCount(['slots as total_paid_members' => function ($query) {
+                $query->join('slot_members', 'slots.id', '=', 'slot_members.slot_id')
+                    ->where('slot_members.payment_status', 'paid');
+            }])
+            ->latest()
+            ->get()
+            ->map(function ($service) {
+                // Get the first slot's creator as the service creator
+                $creator = $service->slots->first()?->creator;
+                unset($service->slots); // Remove slots from response
+                $service->creator = $creator;
+                return $service;
+            });
+
         return response()->json([
             'status' => 'success',
             'data' => $services
