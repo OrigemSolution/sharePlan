@@ -17,7 +17,7 @@ class UserMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || auth()->user()->role_id !== 1) {
+        if (!auth()->check() || auth()->user()->role_id != 1) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Regular user access required.'
