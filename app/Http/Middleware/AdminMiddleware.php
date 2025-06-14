@@ -17,7 +17,7 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || auth()->user()->role_id !== 2) {
+        if (!auth()->check() || auth()->user()->role_id != 2) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Unauthorized. Admin access required.'
