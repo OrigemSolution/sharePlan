@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\ServiceController;
 use App\Http\Controllers\Api\User\SlotController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\PaymentController;
 
 /*
@@ -64,3 +65,14 @@ Route::prefix('services')->group(function () {
 
 // Paystack webhook (no auth required)
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
+
+// Contact routes
+Route::post('/contact', [ContactController::class, 'store']); // Public route for sending messages
+
+// Admin contact routes
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/contact', [ContactController::class, 'index']);
+    Route::get('/contact/{id}', [ContactController::class, 'show']);
+    Route::delete('/contact/{id}', [ContactController::class, 'destroy']);
+    Route::put('/contact/{id}', [ContactController::class, 'update']);
+});
