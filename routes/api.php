@@ -26,6 +26,10 @@ Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPass
 Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOTP']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+// Public slot routes (visible to all)
+Route::get('/slots', [SlotController::class, 'index']);
+Route::get('/slots/{id}', [SlotController::class, 'show']);
+
 // Guest slot routes (no auth required)
 Route::post('/slots/{id}/join-as-guest', [SlotController::class, 'joinAsGuest']);
 Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGuestPayment']);
@@ -36,25 +40,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/delete-account', [AuthController::class, 'delete']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+
+    //Service routes
+    Route::get('/services', [ServiceController::class, 'index']);
+    Route::get('/services/{id}', [ServiceController::class, 'show']);
     // Payment routes
     Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment']);
     Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
-    // Slot routes
+    
+    // Authenticated user slot routes
     Route::post('/slots/add', [SlotController::class, 'create']);
     Route::post('/slots/confirm-payment', [SlotController::class, 'confirmPayment']);
-    Route::get('/slot/{id}', [SlotController::class, 'show']);
-    Route::put('/update/{id}', [SlotController::class, 'update']);
-    Route::delete('/delete/{id}', [SlotController::class, 'destroy']);
-    Route::get('/slots', [SlotController::class, 'index']);
-    
+    Route::put('/slots/{id}', [SlotController::class, 'update']);
+    Route::delete('/slots/{id}', [SlotController::class, 'destroy']);
 });
 
 // Service routes
 Route::prefix('services')->group(function () {
-    // Public routes
-    Route::get('/', [ServiceController::class, 'index']);
-    Route::get('/{id}', [ServiceController::class, 'show']);
-
     // Admin only routes
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::post('/add', [ServiceController::class, 'store']);

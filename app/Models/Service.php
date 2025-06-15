@@ -15,25 +15,17 @@ class Service extends Model
         'description',
         'logo',
         'price',
-        'max_members',
-        'duration',
         'is_active',
-        'creator_id'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'is_active' => 'boolean',
-        'max_members' => 'integer'
     ];
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'creator_id');
-    }
 
     public function slots(): HasMany
     {
         return $this->hasMany(Slot::class);
     }
+
 }

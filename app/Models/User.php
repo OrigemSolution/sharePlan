@@ -54,7 +54,7 @@ class User extends Authenticatable
 
     public function slots()
     {
-        return $this->hasMany(Slot::class, 'creator_id');
+        return $this->hasMany(Slot::class, 'user_id');
     }
 
     public function slotMemberships()
@@ -64,7 +64,7 @@ class User extends Authenticatable
 
     public function services()
     {
-        return $this->hasMany(Service::class, 'creator_id');
+        return $this->hasMany(Service::class, 'user_id');
     }
 
     public function payments()
@@ -74,7 +74,7 @@ class User extends Authenticatable
 
     public function creatorPayouts()
     {
-        return $this->hasMany(CreatorPayout::class, 'creator_id');
+        return $this->hasMany(CreatorPayout::class, 'user_id');
     }
 
     public function notifications()

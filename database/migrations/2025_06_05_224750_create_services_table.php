@@ -16,9 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('logo');
-            $table->decimal('price', 8, 2);
-            $table->integer('max_members');
-            $table->string('duration'); 
+            $table->decimal('price', 8, 2); 
             $table->boolean('is_active');
             $table->timestamps();
         });

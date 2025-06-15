@@ -23,10 +23,14 @@ class SlotController extends Controller
     public function index()
     {
         try {
-            $slots = Slot::with(['service', 'members'])
-                ->where('user_id', auth()->id())
-                ->latest()
-                ->get();
+            $query = Slot::with(['service', 'members']);
+
+            // If user is authenticated, show their slots
+            if (auth()->check()) {
+                $query->where('user_id', auth()->id());
+            }
+
+            $slots = $query->latest()->get();
 
             return response()->json([
                 'status' => 'success',
@@ -51,6 +55,7 @@ class SlotController extends Controller
         $validator = Validator::make($request->all(), [
             'service_id' => 'required|exists:services,id',
             'duration' => 'required|integer|min:1',
+            'expires_at' => 'required|date|after:today'
         ]);
 
         if ($validator->fails()) {
@@ -74,7 +79,8 @@ class SlotController extends Controller
                 'current_members' => 1, // Creator is the first member
                 'duration' => $request->duration,
                 'status' => 'open',
-                'expires_at' => now()->addDays(7), // Slot expires in 7 days if not filled
+                'expires_at' => $request->expires_at,
+                'payment_status' => 'pending'
             ]);
 
             // Generate Paystack payment
@@ -84,11 +90,15 @@ class SlotController extends Controller
             $payment = Payment::create([
                 'user_id' => $request->user()->id,
                 'service_id' => $service->id,
+                'slot_id' => $slot->id,
                 'amount' => $service->price * 100, // Paystack amount in kobo
                 'reference' => $reference,
                 'status' => 'pending',
                 'currency' => 'NGN',
             ]);
+
+            // Update slot with payment reference
+            $slot->update(['payment_reference' => $reference]);
 
             // Add creator as first slot member (pending payment)
             $slotMember = SlotMember::create([
@@ -184,6 +194,10 @@ class SlotController extends Controller
                 'metadata' => $paymentDetails['data']['metadata'] ?? null
             ]);
 
+            // Update slot payment status
+            $slot = Slot::findOrFail($request->slot_id);
+            $slot->update(['payment_status' => 'paid']);
+
             // Update slot member payment status
             $slotMember = SlotMember::where([
                 'slot_id' => $request->slot_id,
@@ -202,6 +216,7 @@ class SlotController extends Controller
             DB::commit();
 
             return $this->success([
+                'slot' => $slot,
                 'slot_member' => $slotMember,
                 'payment' => $payment
             ], 'Payment confirmed successfully');
@@ -219,7 +234,6 @@ class SlotController extends Controller
     {
         try {
             $slot = Slot::with(['service', 'members'])
-                ->where('user_id', auth()->id())
                 ->findOrFail($id);
 
             return response()->json([
@@ -257,11 +271,18 @@ class SlotController extends Controller
                 ], 422);
             }
 
-            // Only allow updates if slot is not completed
+            // Only allow updates if slot is not completed and payment is confirmed
             if ($slot->status === 'completed') {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Cannot update a completed slot'
+                ], 400);
+            }
+
+            if ($slot->payment_status !== 'paid') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Cannot update slot before payment is confirmed'
                 ], 400);
             }
 
@@ -363,6 +384,7 @@ class SlotController extends Controller
             $payment = Payment::create([
                 'user_id' => null, // Guest payment
                 'service_id' => $slot->service_id,
+                'slot_id' => $slot->id,
                 'amount' => $slot->service->price * 100, // Paystack amount in kobo
                 'reference' => $reference,
                 'status' => 'pending',

@@ -15,31 +15,8 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        $query = Service::with(['slots' => function($query) {
-                $query->select('id', 'service_id', 'user_id')
-                    ->with('creator:id,name');
-            }])
-            ->withCount(['slots as total_paid_members' => function ($query) {
-                $query->join('slot_members', 'slots.id', '=', 'slot_members.slot_id')
-                    ->where('slot_members.payment_status', 'paid');
-            }]);
 
-        // If user is not authenticated, only show services with creators
-        if (!auth()->check()) {
-            $query->whereHas('slots', function($query) {
-                $query->whereNotNull('user_id');
-            });
-        }
-
-        $services = $query->latest()
-            ->get()
-            ->map(function ($service) {
-                // Get the first slot's creator as the service creator
-                $creator = $service->slots->first()?->creator;
-                unset($service->slots); // Remove slots from response
-                $service->creator = $creator;
-                return $service;
-            });
+        $services = Service::latest()->get();
 
         return response()->json([
             'status' => 'success',
@@ -48,52 +25,59 @@ class ServiceController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
+        // Ensure only admins can create services
+        if (auth()->user()->role_id !== 2) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'logo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'price' => 'required|numeric|min:0',
-            'max_members' => 'required|integer|min:1',
-            'duration' => 'required|string'
+            'is_active' => 'required|boolean'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
+                'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Handle logo upload
-        $logoPath = $request->file('logo')->store('services', 'public');
+        try {
+            // Handle logo upload
+            $logoPath = $request->file('logo')->store('services/logos', 'public');
 
-        $service = Service::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'logo' => $logoPath,
-            'price' => $request->price,
-            'max_members' => $request->max_members,
-            'duration' => $request->duration,
-            'is_active' => true,
-        ]);
+            $service = Service::create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'logo' => $logoPath,
+                'price' => $request->price,
+                'is_active' => $request->is_active,
+            ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Service created successfully',
-            'data' => $service
-        ], 201);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Service created successfully',
+                'data' => $service
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create service',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -110,80 +94,99 @@ class ServiceController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
+        // Ensure only admins can update services
+        if (auth()->user()->role_id !== 2) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access'
+            ], 403);
+        }
+
         $service = Service::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'price' => 'required|numeric|min:0',
-            'max_members' => 'required|integer|min:1',
-            'duration' => 'required|string',
-            'is_active' => 'required|boolean'
+            'logo' => 'sometimes|required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'price' => 'sometimes|required|numeric|min:0',
+            'is_active' => 'sometimes|required|boolean'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
+                'message' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Handle logo update if new file is uploaded
-        if ($request->hasFile('logo')) {
-            // Delete old logo
-            if ($service->logo) {
-                Storage::disk('public')->delete($service->logo);
+        try {
+            $data = $request->except('logo');
+
+            if ($request->hasFile('logo')) {
+                // Delete old logo
+                if ($service->logo) {
+                    Storage::disk('public')->delete($service->logo);
+                }
+                // Upload new logo
+                $data['logo'] = $request->file('logo')->store('services/logos', 'public');
             }
-            $logoPath = $request->file('logo')->store('services', 'public');
-            $service->logo = $logoPath;
+
+            $service->update($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Service updated successfully',
+                'data' => $service
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update service',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $service->update([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'max_members' => $request->max_members,
-            'duration' => $request->duration,
-            'is_active' => $request->is_active
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Service updated successfully',
-            'data' => $service
-        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        $service = Service::findOrFail($id);
-
-        // Delete the logo file
-        if ($service->logo) {
-            Storage::disk('public')->delete($service->logo);
+        // Ensure only admins can delete services
+        if (auth()->user()->role_id !== 2) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized access'
+            ], 403);
         }
 
-        $service->delete();
+        try {
+            $service = Service::findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Service deleted successfully'
-        ]);
+            // Delete service logo
+            if ($service->logo) {
+                Storage::disk('public')->delete($service->logo);
+            }
+
+            $service->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Service deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to delete service',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
