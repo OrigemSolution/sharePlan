@@ -48,14 +48,6 @@ class ContactController extends Controller
      */
     public function index()
     {
-        // Check if user is admin
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         $messages = Contact::latest()
             ->get();
 
@@ -70,14 +62,6 @@ class ContactController extends Controller
      */
     public function show($id)
     {
-        // Check if user is admin
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         $message = Contact::findOrFail($id);
 
         return response()->json([
@@ -91,14 +75,6 @@ class ContactController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Check if user is admin
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:in_progress,resolved'
         ]);
@@ -126,14 +102,6 @@ class ContactController extends Controller
      */
     public function destroy($id)
     {
-        // Check if user is admin
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         $message = Contact::findOrFail($id);
         $message->delete();
 

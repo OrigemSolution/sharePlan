@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\ServiceController;
+use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\User\SlotController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\PaymentController;
@@ -77,4 +78,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/contact/{id}', [ContactController::class, 'show']);
     Route::delete('/contact/{id}', [ContactController::class, 'destroy']);
     Route::put('/contact/{id}', [ContactController::class, 'update']);
+
+    // Admin user management routes
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}/status', [UserController::class, 'updateStatus']);
 });

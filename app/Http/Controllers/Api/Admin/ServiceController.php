@@ -15,7 +15,6 @@ class ServiceController extends Controller
      */
     public function index()
     {
-
         $services = Service::latest()->get();
 
         return response()->json([
@@ -29,14 +28,6 @@ class ServiceController extends Controller
      */
     public function store(Request $request)
     {
-        // Ensure only admins can create services
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -98,14 +89,6 @@ class ServiceController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Ensure only admins can update services
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         $service = Service::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -158,14 +141,6 @@ class ServiceController extends Controller
      */
     public function destroy($id)
     {
-        // Ensure only admins can delete services
-        if (auth()->user()->role_id !== 2) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized access'
-            ], 403);
-        }
-
         try {
             $service = Service::findOrFail($id);
 
