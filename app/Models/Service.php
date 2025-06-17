@@ -14,6 +14,7 @@ class Service extends Model
         'name',
         'description',
         'logo',
+        'max_members',
         'price',
         'is_active',
     ];

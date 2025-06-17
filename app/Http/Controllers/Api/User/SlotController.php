@@ -11,15 +11,12 @@ use App\Models\Payment;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Unicodeveloper\Paystack\Facades\Paystack;
-use App\Traits\ApiResponder;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 class SlotController extends Controller
 {
-    use ApiResponder;
-
     public function index()
     {
         try {
@@ -49,7 +46,10 @@ class SlotController extends Controller
     {
         // Check if user is verified
         if ($request->user()->status !== 'verified') {
-            return $this->error(null, 'Only verified users can create slots', 403);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only verified users can create slots'
+            ], 403);
         }
 
         $validator = Validator::make($request->all(), [
@@ -59,7 +59,11 @@ class SlotController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation failed', 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
@@ -69,7 +73,10 @@ class SlotController extends Controller
             $service = Service::findOrFail($request->service_id);
             
             if (!$service->is_active) {
-                return $this->error(null, 'This service is currently not available', 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This service is currently not available'
+                ], 400);
             }
 
             // Create the slot
@@ -129,19 +136,27 @@ class SlotController extends Controller
 
             DB::commit();
 
-            return $this->success([
-                'slot' => $slot,
-                'payment' => [
-                    'authorization_url' => $authorizationUrl,
-                    'reference' => $reference,
-                    'amount' => $service->price
-                ],
-                'service' => $service
-            ], 'Slot created successfully. Please complete payment.');
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Slot created successfully. Please complete payment.',
+                'data' => [
+                    'slot' => $slot,
+                    'payment' => [
+                        'authorization_url' => $authorizationUrl,
+                        'reference' => $reference,
+                        'amount' => $service->price
+                    ],
+                    'service' => $service
+                ]
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error($e->getMessage(), 'Failed to create slot', 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to create slot',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -153,7 +168,11 @@ class SlotController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation failed', 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
@@ -165,7 +184,10 @@ class SlotController extends Controller
                             ->first();
 
             if (!$payment) {
-                return $this->error(null, 'Payment not found or already processed', 404);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Payment not found or already processed'
+                ], 404);
             }
 
             try {
@@ -181,10 +203,17 @@ class SlotController extends Controller
                 $paymentDetails = json_decode($response->getBody(), true);
 
                 if (!$paymentDetails['status'] || $paymentDetails['data']['status'] !== 'success') {
-                    return $this->error(null, 'Payment verification failed. Status: ' . ($paymentDetails['data']['status'] ?? 'unknown'), 400);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Payment verification failed. Status: ' . ($paymentDetails['data']['status'] ?? 'unknown')
+                    ], 400);
                 }
             } catch (\Exception $e) {
-                return $this->error('Payment verification failed: ' . $e->getMessage(), 'Payment verification error', 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Payment verification error',
+                    'error' => $e->getMessage()
+                ], 400);
             }
 
             // Update payment status
@@ -206,7 +235,10 @@ class SlotController extends Controller
             ])->first();
 
             if (!$slotMember) {
-                return $this->error(null, 'Slot member not found', 404);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Slot member not found'
+                ], 404);
             }
 
             $slotMember->update([
@@ -215,15 +247,19 @@ class SlotController extends Controller
 
             DB::commit();
 
-            return $this->success([
+            return response()->json([
                 'slot' => $slot,
                 'slot_member' => $slotMember,
                 'payment' => $payment
-            ], 'Payment confirmed successfully');
+            ], 'Payment confirmed successfully', 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error($e->getMessage(), 'Failed to confirm payment', 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to confirm payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -238,6 +274,7 @@ class SlotController extends Controller
 
             return response()->json([
                 'status' => 'success',
+                'message' => 'Slot fetched successfully',
                 'data' => $slot
             ]);
         } catch (\Exception $e) {
@@ -292,7 +329,7 @@ class SlotController extends Controller
                 'status' => 'success',
                 'message' => 'Slot updated successfully',
                 'data' => $slot
-            ]);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -331,7 +368,7 @@ class SlotController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Slot deleted successfully'
-            ]);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -350,7 +387,11 @@ class SlotController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation failed', 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
@@ -360,12 +401,18 @@ class SlotController extends Controller
             $slot = Slot::with('service')->findOrFail($id);
 
             if ($slot->status !== 'open') {
-                return $this->error(null, 'This slot is not available for joining', 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This slot is not available for joining'
+                ], 400);
             }
 
             // Check if the slot is not full
             if ($slot->current_members >= $slot->service->max_members) {
-                return $this->error(null, 'This slot is already full', 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This slot is already full'
+                ], 400);
             }
 
             // Check if the email is not already in this slot
@@ -374,7 +421,10 @@ class SlotController extends Controller
                                       ->first();
             
             if ($existingMember) {
-                return $this->error(null, 'This email is already registered in this slot', 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This email is already registered in this slot'
+                ], 400);
             }
 
             // Generate Paystack payment
@@ -423,7 +473,7 @@ class SlotController extends Controller
 
             DB::commit();
 
-            return $this->success([
+            return response()->json([
                 'slot' => $slot,
                 'payment' => [
                     'authorization_url' => $authorizationUrl,
@@ -435,7 +485,11 @@ class SlotController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error($e->getMessage(), 'Failed to join slot', 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to join slot',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -448,7 +502,11 @@ class SlotController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->error($validator->errors(), 'Validation failed', 422);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
         try {
@@ -460,7 +518,10 @@ class SlotController extends Controller
                             ->first();
 
             if (!$payment) {
-                return $this->error(null, 'Payment not found or already processed', 404);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Payment not found or already processed'
+                ], 404);
             }
 
             try {
@@ -476,10 +537,16 @@ class SlotController extends Controller
                 $paymentDetails = json_decode($response->getBody(), true);
 
                 if (!$paymentDetails['status'] || $paymentDetails['data']['status'] !== 'success') {
-                    return $this->error(null, 'Payment verification failed. Status: ' . ($paymentDetails['data']['status'] ?? 'unknown'), 400);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Payment verification failed. Status: ' . ($paymentDetails['data']['status'] ?? 'unknown')
+                    ], 400);
                 }
             } catch (\Exception $e) {
-                return $this->error('Payment verification failed: ' . $e->getMessage(), 'Payment verification error', 400);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Payment verification failed: ' . $e->getMessage()
+                ], 400);
             }
 
             // Update payment status
@@ -497,7 +564,10 @@ class SlotController extends Controller
             ])->first();
 
             if (!$slotMember) {
-                return $this->error(null, 'Slot member not found', 404);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Slot member not found'
+                ], 404);
             }
 
             $slotMember->update([
@@ -506,14 +576,18 @@ class SlotController extends Controller
 
             DB::commit();
 
-            return $this->success([
+            return response()->json([
                 'slot_member' => $slotMember,
                 'payment' => $payment
             ], 'Payment confirmed successfully');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error($e->getMessage(), 'Failed to confirm payment', 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to confirm payment',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

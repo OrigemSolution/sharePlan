@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
+
 class ServiceController extends Controller
 {
     /**
@@ -32,6 +33,7 @@ class ServiceController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'max_members' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
             'is_active' => 'required|boolean'
         ]);
@@ -52,6 +54,7 @@ class ServiceController extends Controller
                 'name' => $request->name,
                 'description' => $request->description,
                 'logo' => $logoPath,
+                'max_members' => $request->max_members,
                 'price' => $request->price,
                 'is_active' => $request->is_active,
             ]);
@@ -95,6 +98,7 @@ class ServiceController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'logo' => 'sometimes|required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'max_members' => 'sometimes|required|integer|min:1',
             'price' => 'sometimes|required|numeric|min:0',
             'is_active' => 'sometimes|required|boolean'
         ]);
