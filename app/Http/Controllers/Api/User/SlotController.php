@@ -248,10 +248,14 @@ class SlotController extends Controller
             DB::commit();
 
             return response()->json([
-                'slot' => $slot,
-                'slot_member' => $slotMember,
-                'payment' => $payment
-            ], 'Payment confirmed successfully', 200);
+                'status' => 'success',
+                'message' => 'Payment confirmed successfully',
+                'data' => [
+                    'slot' => $slot,
+                    'slot_member' => $slotMember,
+                    'payment' => $payment
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
