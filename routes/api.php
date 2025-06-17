@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment routes
     Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment']);
     Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+    Route::get('/payments/my-payments', [PaymentController::class, 'getUserPayments']);
     
     // Authenticated user slot routes
     Route::post('/slots/add', [SlotController::class, 'create']);
@@ -83,4 +84,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}/status', [UserController::class, 'updateStatus']);
+
+    // Admin payment management routes
+    Route::get('/payments', [PaymentController::class, 'getAllPayments']);
+    Route::get('/payments/{id}', [PaymentController::class, 'getPaymentDetails']);
 });
