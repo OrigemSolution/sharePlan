@@ -41,7 +41,7 @@ class SlotController extends Controller
                     'status' => $slot->status,
                     'duration' => $slot->duration,
                     'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
-                    'current_members' => $slot->current_members,
+                    'current_members' => $slot->members->count(), // Count of paid members only
                     'payment_status' => $slot->payment_status,
                     'members' => $slot->members, // This will now only include paid members
                 ];
