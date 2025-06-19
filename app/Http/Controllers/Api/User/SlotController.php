@@ -20,7 +20,9 @@ class SlotController extends Controller
     public function index()
     {
         try {
-            $query = Slot::with(['service', 'user', 'members']);
+            $query = Slot::with(['service', 'user', 'members' => function($query) {
+                $query->where('payment_status', 'paid');
+            }]);
 
             // If user is authenticated, show their slots
             if (auth()->check()) {
@@ -41,7 +43,7 @@ class SlotController extends Controller
                     'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
                     'current_members' => $slot->current_members,
                     'payment_status' => $slot->payment_status,
-                    'members' => $slot->members,
+                    'members' => $slot->members, // This will now only include paid members
                 ];
             });
 
@@ -289,7 +291,9 @@ class SlotController extends Controller
     public function show(string $id)
     {
         try {
-            $slot = Slot::with(['service', 'user', 'members'])
+            $slot = Slot::with(['service', 'user', 'members' => function($query) {
+                $query->where('payment_status', 'paid');
+            }])
                 ->findOrFail($id);
 
             $data = [
@@ -302,7 +306,7 @@ class SlotController extends Controller
                 'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
                 'current_members' => $slot->current_members,
                 'payment_status' => $slot->payment_status,
-                'members' => $slot->members,
+                'members' => $slot->members, // This will now only include paid members
             ];
 
             return response()->json([
@@ -358,7 +362,9 @@ class SlotController extends Controller
 
             $slot->update($request->only(['duration', 'status', 'expires_at']));
             $slot->refresh();
-            $slot->load(['service', 'user', 'members']);
+            $slot->load(['service', 'user', 'members' => function($query) {
+                $query->where('payment_status', 'paid');
+            }]);
 
             $data = [
                 'id' => $slot->id,
@@ -370,7 +376,7 @@ class SlotController extends Controller
                 'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
                 'current_members' => $slot->current_members,
                 'payment_status' => $slot->payment_status,
-                'members' => $slot->members,
+                'members' => $slot->members, // This will now only include paid members
             ];
 
             return response()->json([
@@ -522,14 +528,18 @@ class SlotController extends Controller
             DB::commit();
 
             return response()->json([
-                'slot' => $slot,
-                'payment' => [
-                    'authorization_url' => $authorizationUrl,
-                    'reference' => $reference,
-                    'amount' => $slot->service->price
-                ],
-                'service' => $slot->service
-            ], 'Slot joined successfully. Please complete payment.');
+                'status' => 'success',
+                'message' => 'Slot joined successfully. Please complete payment.',
+                'data' => [
+                    'slot' => $slot,
+                    'payment' => [
+                        'authorization_url' => $authorizationUrl,
+                        'reference' => $reference,
+                        'amount' => $slot->service->price
+                    ],
+                    'service' => $slot->service
+                ]
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -625,9 +635,13 @@ class SlotController extends Controller
             DB::commit();
 
             return response()->json([
-                'slot_member' => $slotMember,
-                'payment' => $payment
-            ], 'Payment confirmed successfully');
+                'status' => 'success',
+                'message' => 'Payment confirmed successfully',
+                'data' => [
+                    'slot_member' => $slotMember,
+                    'payment' => $payment
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
