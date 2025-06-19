@@ -20,7 +20,7 @@ class SlotController extends Controller
     public function index()
     {
         try {
-            $query = Slot::with(['service', 'members']);
+            $query = Slot::with(['service', 'user', 'members']);
 
             // If user is authenticated, show their slots
             if (auth()->check()) {
@@ -29,9 +29,25 @@ class SlotController extends Controller
 
             $slots = $query->latest()->get();
 
+            // Transform the slots to include creator and service name
+            $data = $slots->map(function ($slot) {
+                return [
+                    'id' => $slot->id,
+                    'user_id' => $slot->user_id,
+                    'creator_name' => $slot->user ? $slot->user->name : null,
+                    'service_name' => $slot->service ? $slot->service->name : null,
+                    'status' => $slot->status,
+                    'duration' => $slot->duration,
+                    'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
+                    'current_members' => $slot->current_members,
+                    'payment_status' => $slot->payment_status,
+                    'members' => $slot->members,
+                ];
+            });
+
             return response()->json([
                 'status' => 'success',
-                'data' => $slots
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -273,13 +289,26 @@ class SlotController extends Controller
     public function show(string $id)
     {
         try {
-            $slot = Slot::with(['service', 'members'])
+            $slot = Slot::with(['service', 'user', 'members'])
                 ->findOrFail($id);
+
+            $data = [
+                'id' => $slot->id,
+                'user_id' => $slot->user_id,
+                'creator_name' => $slot->user ? $slot->user->name : null,
+                'service_name' => $slot->service ? $slot->service->name : null,
+                'status' => $slot->status,
+                'duration' => $slot->duration,
+                'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
+                'current_members' => $slot->current_members,
+                'payment_status' => $slot->payment_status,
+                'members' => $slot->members,
+            ];
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Slot fetched successfully',
-                'data' => $slot
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -328,11 +357,26 @@ class SlotController extends Controller
             }
 
             $slot->update($request->only(['duration', 'status', 'expires_at']));
+            $slot->refresh();
+            $slot->load(['service', 'user', 'members']);
+
+            $data = [
+                'id' => $slot->id,
+                'user_id' => $slot->user_id,
+                'creator_name' => $slot->user ? $slot->user->name : null,
+                'service_name' => $slot->service ? $slot->service->name : null,
+                'status' => $slot->status,
+                'duration' => $slot->duration,
+                'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
+                'current_members' => $slot->current_members,
+                'payment_status' => $slot->payment_status,
+                'members' => $slot->members,
+            ];
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Slot updated successfully',
-                'data' => $slot
+                'data' => $data
             ], 200);
 
         } catch (\Exception $e) {

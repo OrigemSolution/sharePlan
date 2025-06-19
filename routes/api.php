@@ -46,8 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{id}', [ServiceController::class, 'show']);
     // Payment routes
-    Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment']);
-    Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+    // Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment']);
+    // Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
     Route::get('/payments/my-payments', [PaymentController::class, 'getUserPayments']);
     
     // Authenticated user slot routes
