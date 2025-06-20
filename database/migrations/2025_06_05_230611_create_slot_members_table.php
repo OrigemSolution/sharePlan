@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignID('user_id')->nullable()->constrained()->cascadeOnDelete(); //nullable for guests
             $table->string('member_name'); //for non registered users 
             $table->string('member_email'); //for non registered users 
+            $table->string('member_phone');
             $table->enum('payment_status', ['pending', 'paid']);
             $table->string('payment_id')->nullable();
             $table->timestamps();

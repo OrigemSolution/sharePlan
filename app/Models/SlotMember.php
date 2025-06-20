@@ -15,6 +15,7 @@ class SlotMember extends Model
         'user_id',
         'member_name',
         'member_email',
+        'member_phone',
         'payment_status',
         'payment_id'
     ];

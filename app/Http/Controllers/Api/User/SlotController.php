@@ -37,13 +37,14 @@ class SlotController extends Controller
                     'id' => $slot->id,
                     'user_id' => $slot->user_id,
                     'creator_name' => $slot->user ? $slot->user->name : null,
-                    'service_name' => $slot->service ? $slot->service->name : null,
+                    
                     'status' => $slot->status,
                     'duration' => $slot->duration,
-                    'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
                     'current_members' => $slot->members->count(), // Count of paid members only
                     'payment_status' => $slot->payment_status,
-                    'members' => $slot->members, // This will now only include paid members
+                    'service' => $slot->service,
+                    'members' => $slot->members, 
+                    
                 ];
             });
 
@@ -73,7 +74,6 @@ class SlotController extends Controller
         $validator = Validator::make($request->all(), [
             'service_id' => 'required|exists:services,id',
             'duration' => 'required|integer|min:1',
-            'expires_at' => 'required|date|after:today'
         ]);
 
         if ($validator->fails()) {
@@ -104,7 +104,6 @@ class SlotController extends Controller
                 'current_members' => 1, // Creator is the first member
                 'duration' => $request->duration,
                 'status' => 'open',
-                'expires_at' => $request->expires_at,
                 'payment_status' => 'pending'
             ]);
 
@@ -131,6 +130,7 @@ class SlotController extends Controller
                 'user_id' => $request->user()->id,
                 'member_name' => $request->user()->name,
                 'member_email' => $request->user()->email,
+                'member_phone' => $request->user()->phone,
                 'payment_status' => 'pending',
                 'payment_id' => $payment->id
             ]);
@@ -300,13 +300,13 @@ class SlotController extends Controller
                 'id' => $slot->id,
                 'user_id' => $slot->user_id,
                 'creator_name' => $slot->user ? $slot->user->name : null,
-                'service_name' => $slot->service ? $slot->service->name : null,
                 'status' => $slot->status,
                 'duration' => $slot->duration,
-                'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
                 'current_members' => $slot->current_members,
                 'payment_status' => $slot->payment_status,
-                'members' => $slot->members, // This will now only include paid members
+                'service' => $slot->service,
+                'members' => $slot->members, 
+                
             ];
 
             return response()->json([
@@ -334,7 +334,6 @@ class SlotController extends Controller
             $validator = Validator::make($request->all(), [
                 'duration' => 'sometimes|required|integer|min:1',
                 'status' => 'sometimes|required|in:open,completed,cancelled',
-                'expires_at' => 'sometimes|required|date|after:today'
             ]);
 
             if ($validator->fails()) {
@@ -360,7 +359,7 @@ class SlotController extends Controller
                 ], 400);
             }
 
-            $slot->update($request->only(['duration', 'status', 'expires_at']));
+            $slot->update($request->only(['duration', 'status']));
             $slot->refresh();
             $slot->load(['service', 'user', 'members' => function($query) {
                 $query->where('payment_status', 'paid');
@@ -370,13 +369,12 @@ class SlotController extends Controller
                 'id' => $slot->id,
                 'user_id' => $slot->user_id,
                 'creator_name' => $slot->user ? $slot->user->name : null,
-                'service_name' => $slot->service ? $slot->service->name : null,
                 'status' => $slot->status,
                 'duration' => $slot->duration,
-                'expires_at' => $slot->expires_at ? $slot->expires_at->format('Y-m-d') : null,
                 'current_members' => $slot->current_members,
                 'payment_status' => $slot->payment_status,
-                'members' => $slot->members, // This will now only include paid members
+                'members' => $slot->members, 
+                'service' => $slot->service,
             ];
 
             return response()->json([
@@ -438,6 +436,7 @@ class SlotController extends Controller
         $validator = Validator::make($request->all(), [
             'full_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -475,10 +474,73 @@ class SlotController extends Controller
                                       ->first();
             
             if ($existingMember) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'This email is already registered in this slot'
-                ], 400);
+                // If member exists with paid status, block them
+                if ($existingMember->payment_status === 'paid') {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'This email is already registered and paid in this slot'
+                    ], 400);
+                }
+                
+                // If member exists with pending payment, allow them to rejoin
+                if ($existingMember->payment_status === 'pending') {
+                    // Update their name in case it changed
+                    $existingMember->update([
+                        'member_name' => $request->full_name
+                    ]);
+                    
+                    // Generate new Paystack payment
+                    $reference = Paystack::genTranxRef();
+                    
+                    // Create new payment record
+                    $payment = Payment::create([
+                        'user_id' => null, // Guest payment
+                        'service_id' => $slot->service_id,
+                        'slot_id' => $slot->id,
+                        'amount' => $slot->service->price * 100, // Paystack amount in kobo
+                        'reference' => $reference,
+                        'status' => 'pending',
+                        'currency' => 'NGN',
+                    ]);
+                    
+                    // Update the existing member with new payment ID
+                    $existingMember->update([
+                        'payment_id' => $payment->id
+                    ]);
+                    
+                    // Initialize Paystack transaction
+                    $paymentData = [
+                        "amount" => $payment->amount,
+                        "reference" => $payment->reference,
+                        "email" => $request->email,
+                        "currency" => "NGN",
+                        "metadata" => [
+                            "service_id" => $slot->service_id,
+                            "payment_id" => $payment->id,
+                            "slot_id" => $slot->id,
+                            "slot_member_id" => $existingMember->id,
+                            "is_guest" => true
+                        ]
+                    ];
+
+                    $authorizationUrl = Paystack::getAuthorizationUrl($paymentData)->url;
+
+                    DB::commit();
+
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Welcome back! Please complete your payment.',
+                        'data' => [
+                            'slot' => $slot,
+                            'payment' => [
+                                'authorization_url' => $authorizationUrl,
+                                'reference' => $reference,
+                                'amount' => $slot->service->price
+                            ],
+                            'service' => $slot->service
+                        ]
+                    ], 200);
+                }
             }
 
             // Generate Paystack payment
@@ -501,6 +563,7 @@ class SlotController extends Controller
                 'user_id' => null, // Guest member
                 'member_name' => $request->full_name,
                 'member_email' => $request->email,
+                'member_phone' => $request->phone,
                 'payment_status' => 'pending',
                 'payment_id' => $payment->id
             ]);
@@ -648,6 +711,164 @@ class SlotController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to confirm payment',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Clean up expired pending payments and members
+     * This can be called via a scheduled job or manually
+     */
+    public function cleanupExpiredPayments()
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find pending payments older than 24 hours
+            $expiredPayments = Payment::where('status', 'pending')
+                                    ->where('created_at', '<', now()->subHours(24))
+                                    ->get();
+
+            $cleanedCount = 0;
+
+            foreach ($expiredPayments as $payment) {
+                // Find associated slot member
+                $slotMember = SlotMember::where('payment_id', $payment->id)->first();
+                
+                if ($slotMember) {
+                    // Decrement slot member count
+                    $slot = Slot::find($payment->slot_id);
+                    if ($slot && $slot->current_members > 0) {
+                        $slot->decrement('current_members');
+                    }
+                    
+                    // Delete the slot member
+                    $slotMember->delete();
+                }
+                
+                // Delete the payment
+                $payment->delete();
+                $cleanedCount++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Cleaned up {$cleanedCount} expired pending payments"
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to cleanup expired payments',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Resume payment for a guest with pending payment
+     */
+    public function resumeGuestPayment(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Get the slot
+            $slot = Slot::with('service')->findOrFail($id);
+
+            if ($slot->status !== 'open') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This slot is not available'
+                ], 400);
+            }
+
+            // Find existing member with pending payment
+            $existingMember = SlotMember::where('slot_id', $slot->id)
+                                      ->where('member_email', $request->email)
+                                      ->where('payment_status', 'pending')
+                                      ->first();
+
+            if (!$existingMember) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No pending payment found for this email'
+                ], 404);
+            }
+
+            // Generate new Paystack payment
+            $reference = Paystack::genTranxRef();
+            
+            // Create new payment record
+            $payment = Payment::create([
+                'user_id' => null, // Guest payment
+                'service_id' => $slot->service_id,
+                'slot_id' => $slot->id,
+                'amount' => $slot->service->price * 100, // Paystack amount in kobo
+                'reference' => $reference,
+                'status' => 'pending',
+                'currency' => 'NGN',
+            ]);
+            
+            // Update the existing member with new payment ID
+            $existingMember->update([
+                'payment_id' => $payment->id
+            ]);
+            
+            // Initialize Paystack transaction
+            $paymentData = [
+                "amount" => $payment->amount,
+                "reference" => $payment->reference,
+                "email" => $request->email,
+                "currency" => "NGN",
+                "metadata" => [
+                    "service_id" => $slot->service_id,
+                    "payment_id" => $payment->id,
+                    "slot_id" => $slot->id,
+                    "slot_member_id" => $existingMember->id,
+                    "is_guest" => true
+                ]
+            ];
+
+            $authorizationUrl = Paystack::getAuthorizationUrl($paymentData)->url;
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Payment resumed successfully. Please complete your payment.',
+                'data' => [
+                    'slot' => $slot,
+                    'payment' => [
+                        'authorization_url' => $authorizationUrl,
+                        'reference' => $reference,
+                        'amount' => $slot->service->price
+                    ],
+                    'service' => $slot->service
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to resume payment',
                 'error' => $e->getMessage()
             ], 500);
         }

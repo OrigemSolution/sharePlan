@@ -18,7 +18,6 @@ return new class extends Migration
             $table->integer('current_members'); //Current number of joined members
             $table->integer('duration'); //e.g 1, 2, 3 (signifying months)
             $table->enum('status', [ 'open', 'completed', 'cancelled']);
-            $table->date('expires_at')->nullable(); //When the slot expires if not filled 
             $table->enum('payment_status', ['pending', 'paid'])->default('pending');
             $table->string('payment_reference')->nullable();
             $table->timestamps();

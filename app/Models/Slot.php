@@ -17,11 +17,9 @@ class Slot extends Model
         'current_members',
         'duration',
         'status',
-        'expires_at'
     ];
 
     protected $casts = [
-        'expires_at' => 'date',
         'current_members' => 'integer',
         'duration' => 'integer'
     ];
