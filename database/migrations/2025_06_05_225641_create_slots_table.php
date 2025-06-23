@@ -20,6 +20,7 @@ return new class extends Migration
             $table->enum('status', [ 'open', 'completed', 'cancelled']);
             $table->enum('payment_status', ['pending', 'paid'])->default('pending');
             $table->string('payment_reference')->nullable();
+            $table->boolean('is_active')->default(false);
             $table->timestamps();
         });
     }

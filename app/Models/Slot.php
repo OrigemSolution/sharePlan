@@ -17,11 +17,17 @@ class Slot extends Model
         'current_members',
         'duration',
         'status',
+        'is_active',
+        'payment_status',
+        'payment_reference'
     ];
 
     protected $casts = [
         'current_members' => 'integer',
-        'duration' => 'integer'
+        'duration' => 'integer',
+        'is_active' => 'boolean',
+        'payment_status' => 'string',
+        'payment_reference' => 'string'
     ];
 
     public function service(): BelongsTo

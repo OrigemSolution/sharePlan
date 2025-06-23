@@ -24,9 +24,15 @@ class SlotController extends Controller
                 $query->where('payment_status', 'paid');
             }]);
 
-            // If user is authenticated, show their slots
+            // If user is authenticated, show their slots (all, including inactive)
             if (auth()->check()) {
-                $query->where('user_id', auth()->id());
+                $query->where(function($q) {
+                    $q->where('user_id', auth()->id())
+                      ->orWhere('is_active', true);
+                });
+            } else {
+                // For guests, only show active slots
+                $query->where('is_active', true);
             }
 
             $slots = $query->latest()->get();
@@ -104,7 +110,8 @@ class SlotController extends Controller
                 'current_members' => 1, // Creator is the first member
                 'duration' => $request->duration,
                 'status' => 'open',
-                'payment_status' => 'pending'
+                'payment_status' => 'pending',
+                'is_active' => false // Slot is not active until payment is confirmed
             ]);
 
             // Generate Paystack payment
@@ -243,7 +250,11 @@ class SlotController extends Controller
 
             // Update slot payment status
             $slot = Slot::findOrFail($request->slot_id);
-            $slot->update(['payment_status' => 'paid']);
+            $slot->update([
+                'payment_status' => 'paid',
+                // Activate slot if the payer is the creator
+                'is_active' => ($slot->user_id === $request->user()->id) ? true : $slot->is_active
+            ]);
 
             // Update slot member payment status
             $slotMember = SlotMember::where([
