@@ -27,13 +27,12 @@ Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPass
 Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOTP']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-// Public slot routes (visible to all)
+// Public slot routes (Guests)
 Route::get('/slots', [SlotController::class, 'index']);
 Route::get('/slots/{id}', [SlotController::class, 'show']);
-
-// Guest slot routes (no auth required)
 Route::post('/slots/{id}/join-as-guest', [SlotController::class, 'joinAsGuest']);
 Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGuestPayment']);
+Route::get('/slots/trending', [SlotController::class, 'trending']);
 
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {

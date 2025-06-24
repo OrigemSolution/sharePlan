@@ -884,4 +884,24 @@ class SlotController extends Controller
             ], 500);
         }
     }
+
+    public function trending(Request $request)
+    {
+        $days = $request->input('days', 7); // Allow override via query param
+
+        $trendingSlots = Slot::with(['service', 'user'])
+            ->where('is_active', true)
+            ->withCount(['members' => function($query) use ($days) {
+                $query->where('payment_status', 'paid')
+                      ->where('created_at', '>=', now()->subDays($days));
+            }])
+            ->orderByDesc('members_count')
+            ->take(10)
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $trendingSlots
+        ]);
+    }
 }
