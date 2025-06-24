@@ -33,6 +33,9 @@ Route::get('/slots/{id}', [SlotController::class, 'show']);
 Route::post('/slots/{id}/join-as-guest', [SlotController::class, 'joinAsGuest']);
 Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGuestPayment']);
 Route::get('/slots/trending', [SlotController::class, 'trending']);
+Route::get('/slots/cleanup-expired-payments', [SlotController::class, 'cleanupExpiredPayments']);
+Route::post('/slots/{id}/resume-guest-payment', [SlotController::class, 'resumeGuestPayment']);
+
 
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
