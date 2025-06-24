@@ -28,14 +28,15 @@ Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgot
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Public slot routes (Guests)
+Route::get('/slots/trending', [SlotController::class, 'trending']);
 Route::get('/slots', [SlotController::class, 'index']);
 Route::get('/slots/{id}', [SlotController::class, 'show']);
 Route::post('/slots/{id}/join-as-guest', [SlotController::class, 'joinAsGuest']);
 Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGuestPayment']);
-Route::get('/slots/trending', [SlotController::class, 'trending']);
-Route::get('/slots/cleanup-expired-payments', [SlotController::class, 'cleanupExpiredPayments']);
 Route::post('/slots/{id}/resume-guest-payment', [SlotController::class, 'resumeGuestPayment']);
 
+// Resource route for slots
+Route::apiResource('slots', SlotController::class);
 
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -90,4 +91,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     // Admin payment management routes
     Route::get('/payments', [PaymentController::class, 'getAllPayments']);
     Route::get('/payments/{id}', [PaymentController::class, 'getPaymentDetails']);
+
+    // Admin slot management routes
+    Route::get('/slots/cleanup-expired-payments', [SlotController::class, 'cleanupExpiredPayments']);
 });

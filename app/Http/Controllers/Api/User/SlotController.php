@@ -472,7 +472,10 @@ class SlotController extends Controller
             }
 
             // Check if the slot is not full
-            if ($slot->current_members >= $slot->service->max_members) {
+            $paidMembersCount = SlotMember::where('slot_id', $slot->id)
+                ->where('payment_status', 'paid')
+                ->count();
+            if ($paidMembersCount >= $slot->service->max_members) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'This slot is already full'
