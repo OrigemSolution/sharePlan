@@ -14,6 +14,7 @@ use Unicodeveloper\Paystack\Facades\Paystack;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use App\Models\Utility;
 
 class SlotController extends Controller
 {
@@ -103,6 +104,12 @@ class SlotController extends Controller
                 ], 400);
             }
 
+            // Get creator percentage from Utility
+            $utility = Utility::first();
+            $creatorPercentage = $utility ? $utility->creator_percentage : 0;
+            $servicePrice = $service->price;
+            $creatorAmount = $servicePrice - ($servicePrice * ($creatorPercentage / 100));
+
             // Create the slot
             $slot = Slot::create([
                 'service_id' => $service->id,
@@ -117,12 +124,12 @@ class SlotController extends Controller
             // Generate Paystack payment
             $reference = Paystack::genTranxRef();
             
-            // Create payment record
+            // Create payment record (creator pays discounted amount)
             $payment = Payment::create([
                 'user_id' => $request->user()->id,
                 'service_id' => $service->id,
                 'slot_id' => $slot->id,
-                'amount' => $service->price * 100, // Paystack amount in kobo
+                'amount' => $creatorAmount * 100, // Paystack amount in kobo
                 'reference' => $reference,
                 'status' => 'pending',
                 'currency' => 'NGN',
@@ -169,7 +176,7 @@ class SlotController extends Controller
                     'payment' => [
                         'authorization_url' => $authorizationUrl,
                         'reference' => $reference,
-                        'amount' => $service->price
+                        'amount' => $creatorAmount
                     ],
                     'service' => $service
                 ]
@@ -487,6 +494,12 @@ class SlotController extends Controller
                                       ->where('member_email', $request->email)
                                       ->first();
             
+            // Get flat fee from Utility
+            $utility = Utility::first();
+            $flatFee = $utility ? $utility->flat_fee : 0;
+            $servicePrice = $slot->service->price;
+            $guestAmount = $servicePrice + $flatFee;
+
             if ($existingMember) {
                 // If member exists with paid status, block them
                 if ($existingMember->payment_status === 'paid') {
@@ -506,12 +519,12 @@ class SlotController extends Controller
                     // Generate new Paystack payment
                     $reference = Paystack::genTranxRef();
                     
-                    // Create new payment record
+                    // Create new payment record (guest pays with flat fee)
                     $payment = Payment::create([
                         'user_id' => null, // Guest payment
                         'service_id' => $slot->service_id,
                         'slot_id' => $slot->id,
-                        'amount' => $slot->service->price * 100, // Paystack amount in kobo
+                        'amount' => $guestAmount * 100, // Paystack amount in kobo
                         'reference' => $reference,
                         'status' => 'pending',
                         'currency' => 'NGN',
@@ -549,7 +562,7 @@ class SlotController extends Controller
                             'payment' => [
                                 'authorization_url' => $authorizationUrl,
                                 'reference' => $reference,
-                                'amount' => $slot->service->price
+                                'amount' => $guestAmount
                             ],
                             'service' => $slot->service
                         ]
@@ -560,12 +573,12 @@ class SlotController extends Controller
             // Generate Paystack payment
             $reference = Paystack::genTranxRef();
             
-            // Create payment record
+            // Create payment record (guest pays with flat fee)
             $payment = Payment::create([
                 'user_id' => null, // Guest payment
                 'service_id' => $slot->service_id,
                 'slot_id' => $slot->id,
-                'amount' => $slot->service->price * 100, // Paystack amount in kobo
+                'amount' => $guestAmount * 100, // Paystack amount in kobo
                 'reference' => $reference,
                 'status' => 'pending',
                 'currency' => 'NGN',
@@ -612,7 +625,7 @@ class SlotController extends Controller
                     'payment' => [
                         'authorization_url' => $authorizationUrl,
                         'reference' => $reference,
-                        'amount' => $slot->service->price
+                        'amount' => $guestAmount
                     ],
                     'service' => $slot->service
                 ]
