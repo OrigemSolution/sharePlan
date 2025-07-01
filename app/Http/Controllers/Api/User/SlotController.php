@@ -108,14 +108,18 @@ class SlotController extends Controller
             $utility = Utility::first();
             $creatorPercentage = $utility ? $utility->creator_percentage : 0;
             $servicePrice = $service->price;
-            $creatorAmount = $servicePrice - ($servicePrice * ($creatorPercentage / 100));
+            $maxMembers = (int) $service->max_members;
+            $duration = (int) $request->duration;
+            // New creator formula: (service price / max_members - creator_percentage%) * duration
+            $perMemberPrice = $servicePrice / $maxMembers;
+            $creatorAmount = ($perMemberPrice - ($perMemberPrice * ($creatorPercentage / 100))) * $duration;
 
             // Create the slot
             $slot = Slot::create([
                 'service_id' => $service->id,
                 'user_id' => $request->user()->id,
                 'current_members' => 1, // Creator is the first member
-                'duration' => $request->duration,
+                'duration' => $duration,
                 'status' => 'open',
                 'payment_status' => 'pending',
                 'is_active' => false // Slot is not active until payment is confirmed
@@ -498,7 +502,11 @@ class SlotController extends Controller
             $utility = Utility::first();
             $flatFee = $utility ? $utility->flat_fee : 0;
             $servicePrice = $slot->service->price;
-            $guestAmount = $servicePrice + $flatFee;
+            $maxMembers = (int) $slot->service->max_members;
+            $duration = (int) $slot->duration;
+            // New guest formula: (service price / max_members + flat_fee) * duration
+            $perMemberPrice = $servicePrice / $maxMembers;
+            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
 
             if ($existingMember) {
                 // If member exists with paid status, block them
@@ -842,12 +850,22 @@ class SlotController extends Controller
             // Generate new Paystack payment
             $reference = Paystack::genTranxRef();
             
+            // Get flat fee from Utility
+            $utility = Utility::first();
+            $flatFee = $utility ? $utility->flat_fee : 0;
+            $servicePrice = $slot->service->price;
+            $maxMembers = (int) $slot->service->max_members;
+            $duration = (int) $slot->duration;
+            // New guest formula: (service price / max_members + flat_fee) * duration
+            $perMemberPrice = $servicePrice / $maxMembers;
+            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
+
             // Create new payment record
             $payment = Payment::create([
                 'user_id' => null, // Guest payment
                 'service_id' => $slot->service_id,
                 'slot_id' => $slot->id,
-                'amount' => $slot->service->price * 100, // Paystack amount in kobo
+                'amount' => $guestAmount * 100, // Paystack amount in kobo
                 'reference' => $reference,
                 'status' => 'pending',
                 'currency' => 'NGN',
@@ -885,7 +903,122 @@ class SlotController extends Controller
                     'payment' => [
                         'authorization_url' => $authorizationUrl,
                         'reference' => $reference,
-                        'amount' => $slot->service->price
+                        'amount' => $guestAmount
+                    ],
+                    'service' => $slot->service
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to resume payment',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Resume payment for a creator (auth user) with pending payment
+     */
+    public function resumeCreatorPayment(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'slot_id' => 'required|exists:slots,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Get the slot
+            $slot = Slot::with('service')->where('user_id', auth()->id())->findOrFail($request->slot_id);
+
+            if ($slot->status !== 'open') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This slot is not available'
+                ], 400);
+            }
+
+            // Find existing member with pending payment (creator)
+            $existingMember = SlotMember::where('slot_id', $slot->id)
+                                      ->where('user_id', auth()->id())
+                                      ->where('payment_status', 'pending')
+                                      ->first();
+
+            if (!$existingMember) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No pending payment found for this user'
+                ], 404);
+            }
+
+            // Generate new Paystack payment
+            $reference = Paystack::genTranxRef();
+            
+            // Get creator percentage from Utility
+            $utility = Utility::first();
+            $creatorPercentage = $utility ? $utility->creator_percentage : 0;
+            $servicePrice = $slot->service->price;
+            $maxMembers = (int) $slot->service->max_members;
+            $duration = (int) $slot->duration;
+            // Creator formula: (service price / max_members - creator_percentage%) * duration
+            $perMemberPrice = $servicePrice / $maxMembers;
+            $creatorAmount = ($perMemberPrice - ($perMemberPrice * ($creatorPercentage / 100))) * $duration;
+
+            // Create new payment record
+            $payment = Payment::create([
+                'user_id' => auth()->id(),
+                'service_id' => $slot->service_id,
+                'slot_id' => $slot->id,
+                'amount' => $creatorAmount * 100, // Paystack amount in kobo
+                'reference' => $reference,
+                'status' => 'pending',
+                'currency' => 'NGN',
+            ]);
+            
+            // Update the existing member with new payment ID
+            $existingMember->update([
+                'payment_id' => $payment->id
+            ]);
+            
+            // Initialize Paystack transaction
+            $paymentData = [
+                "amount" => $payment->amount,
+                "reference" => $payment->reference,
+                "email" => auth()->user()->email,
+                "currency" => "NGN",
+                "metadata" => [
+                    "service_id" => $slot->service_id,
+                    "payment_id" => $payment->id,
+                    "slot_id" => $slot->id,
+                    "slot_member_id" => $existingMember->id,
+                    "is_creator" => true
+                ]
+            ];
+
+            $authorizationUrl = Paystack::getAuthorizationUrl($paymentData)->url;
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Payment resumed successfully. Please complete your payment.',
+                'data' => [
+                    'slot' => $slot,
+                    'payment' => [
+                        'authorization_url' => $authorizationUrl,
+                        'reference' => $reference,
+                        'amount' => $creatorAmount
                     ],
                     'service' => $slot->service
                 ]
@@ -918,6 +1051,18 @@ class SlotController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $trendingSlots
+        ]);
+    }
+
+    public function utility()
+    {
+        $utility = Utility::first();
+        $flatFee = $utility ? $utility->flat_fee : 0;
+        $creatorPercentage = $utility ? $utility->creator_percentage : 0;
+        return response()->json([
+            'status' => 'success',
+            'flat_fee' => $flatFee,
+            'creator_percentage' => $creatorPercentage
         ]);
     }
 }

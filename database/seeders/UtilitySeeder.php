@@ -14,8 +14,8 @@ class UtilitySeeder extends Seeder
     {
         Utility::truncate(); // Ensure only one row exists
         Utility::create([
-            'creator_percentage' => 10.00, // Set your default percentage here
-            'flat_fee' => 500.00, // Set your default flat fee here
+            'creator_percentage' => 10.00, // 10%
+            'flat_fee' => 500.00, // flat fee
         ]);
     }
 } 

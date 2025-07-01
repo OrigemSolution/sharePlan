@@ -10,7 +10,7 @@ class Utility extends Model
     use HasFactory;
 
     protected $fillable = [
-        'creator_percentage',
         'flat_fee',
+        'creator_percentage',
     ];
 }

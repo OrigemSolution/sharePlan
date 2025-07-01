@@ -34,6 +34,7 @@ Route::get('/slots/{id}', [SlotController::class, 'show']);
 Route::post('/slots/{id}/join-as-guest', [SlotController::class, 'joinAsGuest']);
 Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGuestPayment']);
 Route::post('/slots/{id}/resume-guest-payment', [SlotController::class, 'resumeGuestPayment']);
+Route::get('/slots_utility', [SlotController::class, 'utility']);
 
 // Resource route for slots
 Route::apiResource('slots', SlotController::class);
@@ -48,9 +49,6 @@ Route::middleware('auth:sanctum')->group(function () {
     //Service routes
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{id}', [ServiceController::class, 'show']);
-    // Payment routes
-    // Route::post('/payments/initiate', [PaymentController::class, 'initiatePayment']);
-    // Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
     Route::get('/payments/my-payments', [PaymentController::class, 'getUserPayments']);
     
     // Authenticated user slot routes
@@ -58,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/slots/confirm-payment', [SlotController::class, 'confirmPayment']);
     Route::put('/slots/{id}', [SlotController::class, 'update']);
     Route::delete('/slots/{id}', [SlotController::class, 'destroy']);
+    Route::post('/slots/{id}/resume-payment', [SlotController::class, 'resumeCreatorPayment']);
 });
 
 // Service routes
