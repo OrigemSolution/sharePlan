@@ -39,19 +39,26 @@ class SlotController extends Controller
             $slots = $query->latest()->get();
 
             // Transform the slots to include creator and service name
-            $data = $slots->map(function ($slot) {
+            $utility = Utility::first();
+            $flatFee = $utility ? $utility->flat_fee : 0;
+            $data = $slots->map(function ($slot) use ($flatFee) {
+                $service = $slot->service;
+                $servicePrice = $service->price;
+                $maxMembers = (int) $service->max_members;
+                $duration = (int) $slot->duration;
+                $perMemberPrice = $servicePrice / $maxMembers;
+                $guestAmount = ($perMemberPrice + $flatFee) * $duration;
                 return [
                     'id' => $slot->id,
                     'user_id' => $slot->user_id,
                     'creator_name' => $slot->user ? $slot->user->name : null,
-                    
                     'status' => $slot->status,
                     'duration' => $slot->duration,
                     'current_members' => $slot->members->count(), // Count of paid members only
                     'payment_status' => $slot->payment_status,
                     'service' => $slot->service,
                     'members' => $slot->members, 
-                    
+                    'guest_price' => $guestAmount
                 ];
             });
 
@@ -318,6 +325,14 @@ class SlotController extends Controller
             }])
                 ->findOrFail($id);
 
+            $utility = Utility::first();
+            $flatFee = $utility ? $utility->flat_fee : 0;
+            $service = $slot->service;
+            $servicePrice = $service->price;
+            $maxMembers = (int) $service->max_members;
+            $duration = (int) $slot->duration;
+            $perMemberPrice = $servicePrice / $maxMembers;
+            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
             $data = [
                 'id' => $slot->id,
                 'user_id' => $slot->user_id,
@@ -328,7 +343,7 @@ class SlotController extends Controller
                 'payment_status' => $slot->payment_status,
                 'service' => $slot->service,
                 'members' => $slot->members, 
-                
+                'guest_price' => $guestAmount
             ];
 
             return response()->json([
