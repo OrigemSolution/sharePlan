@@ -93,4 +93,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(SocialMedia::class);
     }
+
+    public function isAdmin()
+    {
+        return $this->role_id === 2;
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+        // return str_ends_with($this->email, '@extensionafrica.com');
+    }
 }
