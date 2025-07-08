@@ -152,26 +152,57 @@ class PaymentController extends Controller
                 DB::rollBack();
                 return response()->json(['status' => 'error', 'message' => 'Payment not found'], 404);
             }
+
             $payment->update([
                 'status' => 'success',
                 'payment_channel' => $payload['data']['channel'] ?? null,
                 'metadata' => $payload['data']['metadata'] ?? null
             ]);
 
-            // 2. Update Slot
-            $slot = \App\Models\Slot::where('payment_reference', $payload['data']['reference'])->first();
-            if ($slot && $slot->payment_status !== 'paid') {
-                $slot->update([
-                    'status' => 'success',
-                    'payment_status' => 'paid',
-                    'is_active' => true
-                ]);
+            // 2. Handle Slot Updates
+            $slot = null;
+            
+            // Check if this is a slot creator payment (payment has slot_id but slot's payment_reference might not match)
+            if ($payment->slot_id) {
+                $slot = \App\Models\Slot::find($payment->slot_id);
+                
+                if ($slot) {
+                    // If this is the creator's payment (user_id matches slot's user_id)
+                    if ($payment->user_id && $slot->user_id === $payment->user_id) {
+                        $slot->update([
+                            'payment_status' => 'paid',
+                            'is_active' => true
+                        ]);
+                    }
+                    
+                    // Check if the slot is now fully paid (all members have paid)
+                    $this->checkAndActivateSlot($slot);
+                }
+            }
+            
+            // Also check for slot with matching payment_reference (for backward compatibility)
+            if (!$slot) {
+                $slot = \App\Models\Slot::where('payment_reference', $payload['data']['reference'])->first();
+                if ($slot && $slot->payment_status !== 'paid') {
+                    $slot->update([
+                        'payment_status' => 'paid',
+                        'is_active' => true
+                    ]);
+                }
             }
 
             // 3. Update SlotMember
             $slotMember = \App\Models\SlotMember::where('payment_id', $payment->id)->first();
             if ($slotMember && $slotMember->payment_status !== 'paid') {
                 $slotMember->update(['payment_status' => 'paid']);
+                
+                // If this was the creator's payment, update their slot member record
+                if ($slot && $slot->user_id === $slotMember->user_id) {
+                    $slotMember->update([
+                        'payment_status' => 'paid',
+                        'is_creator' => true
+                    ]);
+                }
             }
 
             DB::commit();
@@ -181,7 +212,10 @@ class PaymentController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Webhook processing failed', ['error' => $e->getMessage()]);
+            \Log::error('Webhook processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['status' => 'error', 'message' => 'Webhook processing failed'], 500);
         }
     }

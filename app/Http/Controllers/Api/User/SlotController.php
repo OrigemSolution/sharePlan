@@ -1063,6 +1063,21 @@ class SlotController extends Controller
             ->take(10)
             ->get();
 
+        // Add guest_amount_paid for each slot
+        $trendingSlots = $trendingSlots->map(function ($slot) {
+            // Get all paid members for this slot (excluding creator if needed)
+            $guestMembers = $slot->members()->where('payment_status', 'paid')->whereNull('user_id')->get();
+            $guestAmountPaid = 0;
+            foreach ($guestMembers as $member) {
+                if ($member->payment) {
+                    $guestAmountPaid += $member->payment->amount / 100; // Convert from kobo to NGN
+                }
+            }
+            $slotArray = $slot->toArray();
+            $slotArray['guest_amount_paid'] = $guestAmountPaid;
+            return $slotArray;
+        });
+
         return response()->json([
             'status' => 'success',
             'data' => $trendingSlots
