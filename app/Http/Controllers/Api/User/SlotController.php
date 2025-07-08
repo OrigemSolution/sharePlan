@@ -1076,7 +1076,7 @@ class SlotController extends Controller
             $slotArray = $slot->toArray();
             $slotArray['guest_price'] = $guestAmount;
             return $slotArray;
-        });
+        })->take(6)->values();
 
         return response()->json([
             'status' => 'success',
