@@ -1053,7 +1053,7 @@ class SlotController extends Controller
     {
         $days = $request->input('days', 7); // Allow override via query param
 
-        $trendingSlots = Slot::with(['service', 'user'])
+        $trendingSlots = Slot::with(['service', 'user', 'members.payment'])
             ->where('is_active', true)
             ->withCount(['members' => function($query) use ($days) {
                 $query->where('payment_status', 'paid')
@@ -1063,18 +1063,18 @@ class SlotController extends Controller
             ->take(10)
             ->get();
 
-        // Add guest_amount_paid for each slot
-        $trendingSlots = $trendingSlots->map(function ($slot) {
-            // Get all paid members for this slot (excluding creator if needed)
-            $guestMembers = $slot->members()->where('payment_status', 'paid')->whereNull('user_id')->get();
-            $guestAmountPaid = 0;
-            foreach ($guestMembers as $member) {
-                if ($member->payment) {
-                    $guestAmountPaid += $member->payment->amount / 100; // Convert from kobo to NGN
-                }
-            }
+        // Add guest_price for each slot (same as index)
+        $utility = \App\Models\Utility::first();
+        $flatFee = $utility ? $utility->flat_fee : 0;
+        $trendingSlots = $trendingSlots->map(function ($slot) use ($flatFee) {
+            $service = $slot->service;
+            $servicePrice = $service->price;
+            $maxMembers = (int) $service->max_members;
+            $duration = (int) $slot->duration;
+            $perMemberPrice = $servicePrice / $maxMembers;
+            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
             $slotArray = $slot->toArray();
-            $slotArray['guest_amount_paid'] = $guestAmountPaid;
+            $slotArray['guest_price'] = $guestAmount;
             return $slotArray;
         });
 
