@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ServiceResource\Pages;
+use App\Filament\Resources\ServiceResource\RelationManagers;
 use App\Filament\Resources\ServiceResource\RelationManagers\SlotsRelationManager;
 use App\Models\Service;
 use Filament\Forms;
@@ -113,8 +114,8 @@ class ServiceResource extends Resource
     {
         return [
             'index' => Pages\ListServices::route('/'),
+            'create' => Pages\CreateService::route('/create'),
             'view' => Pages\ViewService::route('/{record}'),
-            // 'create' => Pages\CreateService::route('/create'),
             'edit' => Pages\EditService::route('/{record}/edit'),
         ];
     }

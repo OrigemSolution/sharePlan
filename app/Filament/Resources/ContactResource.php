@@ -21,8 +21,6 @@ class ContactResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?int $navigationSort = 4;
-
     public static function form(Form $form): Form
     {
         return $form
@@ -48,10 +46,14 @@ class ContactResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->searchable(),
-                
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('status')
+                ->options([
+                    'new' => 'New',
+                    'in_progress' => 'In Progress',
+                    'resolved' => 'Resolved',
+                ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -76,6 +78,7 @@ class ContactResource extends Resource
             ]);
     }
 
+
     public static function getRelations(): array
     {
         return [
@@ -87,8 +90,8 @@ class ContactResource extends Resource
     {
         return [
             'index' => Pages\ListContacts::route('/'),
-            'view'  => Pages\ViewContact::route('/{record}'),
-            // 'create' => Pages\CreateContact::route('/create'),
+            'create' => Pages\CreateContact::route('/create'),
+            'view' => Pages\ViewContact::route('/{record}'),
             'edit' => Pages\EditContact::route('/{record}/edit'),
         ];
     }
