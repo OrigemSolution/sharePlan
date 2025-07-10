@@ -38,9 +38,12 @@ class PaymentResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slot.creator.name')
                     ->label('Creator'),
-                Tables\Columns\TextColumn::make('amount')
-                    ->label('Amount')
-                    ->money('NGN'),
+                    Tables\Columns\TextColumn::make('amount')
+                    ->label('Amount (₦)')
+                    ->formatStateUsing(function ($state) {
+                        $amount = $state / 100;
+                        return '₦' . number_format($amount, 2);
+                    }),
                 Tables\Columns\TextColumn::make('payment_reference')
                     ->label('Payment Reference'),
                 Tables\Columns\TextColumn::make('status'),

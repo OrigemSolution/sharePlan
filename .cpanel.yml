@@ -1,8 +1,16 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=$HOME/public_html
-    - /bin/cp -Rf * "$DEPLOYPATH/" 2>/dev/null || true
-    - /bin/cp -Rf .[^.]* "$DEPLOYPATH/" 2>/dev/null || true
-    - /bin/rm -rf "$DEPLOYPATH/.git"
-    - /bin/rm -f "$DEPLOYPATH/.cpanel.yml"
+    - export SHAREPLAN_PATH=$HOME/sharePlan_root
+    - export PUBLIC_PATH=$HOME/public_html
+    - /bin/mkdir -p "$SHAREPLAN_PATH"
+    - /bin/mkdir -p "$PUBLIC_PATH"
+    - /bin/cp -Rf * "$SHAREPLAN_PATH/" 2>/dev/null || true
+    - /bin/cp -Rf .[^.]* "$SHAREPLAN_PATH/" 2>/dev/null || true
+    - /bin/rm -rf "$SHAREPLAN_PATH/public"
+    - /bin/rm -rf "$SHAREPLAN_PATH/.git"
+    - /bin/rm -f "$SHAREPLAN_PATH/.cpanel.yml"
+    - /bin/cp -Rf public/* "$PUBLIC_PATH/" 2>/dev/null || true
+    - /bin/cp -Rf public/.[^.]* "$PUBLIC_PATH/" 2>/dev/null || true
+    - /bin/rm -rf "$PUBLIC_PATH/.git" 2>/dev/null || true
+    - /bin/rm -f "$PUBLIC_PATH/.cpanel.yml" 2>/dev/null || true
