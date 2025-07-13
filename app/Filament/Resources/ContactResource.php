@@ -21,6 +21,8 @@ class ContactResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope';
 
+    protected static ?int $navigationSort = 5;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -55,6 +57,7 @@ class ContactResource extends Resource
                     'resolved' => 'Resolved',
                 ]),
             ])
+            ->defaultSort('id', 'desc')
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),

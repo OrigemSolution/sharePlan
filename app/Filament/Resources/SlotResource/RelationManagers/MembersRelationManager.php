@@ -28,6 +28,7 @@ class MembersRelationManager extends RelationManager
     {
         return $table
             ->recordTitleAttribute('member_name')
+            ->modifyQueryUsing(fn (Builder $query) => $query->where('payment_status', 'paid'))
             ->columns([
                 Tables\Columns\TextColumn::make('member_name')
                     ->label('Name'),

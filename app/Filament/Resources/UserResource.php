@@ -26,6 +26,8 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
+    protected static ?int $navigationSort = 1;
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->where('role_id', 1);
@@ -83,7 +85,7 @@ class UserResource extends Resource
                             ])
                             ->defaultItems(3) // Default to 3 social media handles
                             ->minItems(3) // Require exactly 3
-                            ->maxItems(3)
+                            // ->maxItems(3)
                             ->columnSpanFull(),
                     ]),
                 
@@ -92,7 +94,7 @@ class UserResource extends Resource
                         Forms\Components\Select::make('status')
                             ->options([
                                 'pending' => 'Pending',
-                                'accepted' => 'Accepted',
+                                'verified' => 'Verify',
                                 'rejected' => 'Rejected',
                             ])
                             ->required(),
@@ -123,10 +125,10 @@ class UserResource extends Resource
                     }),
                     
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->since()
+                    ->sortable(),
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
@@ -138,7 +140,6 @@ class UserResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

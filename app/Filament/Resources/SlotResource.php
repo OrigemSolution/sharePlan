@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Infolists\Infolist;
 use Filament\Infolists\Components\TextEntry;
+use Illuminate\Database\Eloquent\Model;
 
 
 class SlotResource extends Resource
@@ -21,8 +22,15 @@ class SlotResource extends Resource
     protected static ?string $model = Slot::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    
 
     protected static ?int $navigationSort = 2;
+    
+    public static function canCreate(): bool
+    {
+        // Prevent creating new transactions
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -68,9 +76,18 @@ class SlotResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
-                Tables\Columns\TextColumn::make('current_members')
-                    ->label('Members')
-                    ->searchable(),
+                    Tables\Columns\TextColumn::make('pending_members_count')
+                    ->label('Pending Members')
+                    ->getStateUsing(function (Model $record): string {
+                        return $record->members()->where('payment_status', 'pending')->count();
+                    })
+                    ->searchable(false),
+                Tables\Columns\TextColumn::make('paid_members_count')
+                    ->label('Paid Members')
+                    ->getStateUsing(function (Model $record): string {
+                        return $record->members()->where('payment_status', 'paid')->count();
+                    })
+                    ->searchable(false),
                 Tables\Columns\TextColumn::make('status')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('payment_status')
@@ -78,9 +95,13 @@ class SlotResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
                 Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Status')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->since()
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('service_id')
                     ->relationship('service', 'name')
@@ -96,7 +117,6 @@ class SlotResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -116,8 +136,11 @@ class SlotResource extends Resource
                 TextEntry::make('duration')
                     ->label('Duration')
                     ->suffix(' month(s)'),
-                TextEntry::make('current_members')
-                    ->label('Members'),
+                TextEntry::make('paid_members_count')
+                    ->label('Paid Members')
+                    ->getStateUsing(function (Model $record): string {
+                        return $record->members()->where('payment_status', 'paid')->count();
+                    }),
                 TextEntry::make('status')
                     ->label('Status'),
                 TextEntry::make('payment_status')
@@ -136,7 +159,6 @@ class SlotResource extends Resource
     {
         return [
             'index' => Pages\ListSlots::route('/'),
-            'create' => Pages\CreateSlot::route('/create'),
             'view' => Pages\ViewSlot::route('/{record}'),
             'edit' => Pages\EditSlot::route('/{record}/edit'),
         ];

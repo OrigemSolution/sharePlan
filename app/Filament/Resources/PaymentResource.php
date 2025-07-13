@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PaymentResource extends Resource
@@ -20,6 +21,24 @@ class PaymentResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
 
     protected static ?int $navigationSort = 3;
+
+    public static function canCreate(): bool
+    {
+        // Prevent creating new transactions
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        // Prevent editing transactions
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        // Prevent deleting transactions
+        return false;
+    }
 
     public static function form(Form $form): Form
     {
@@ -44,8 +63,9 @@ class PaymentResource extends Resource
                         $amount = $state / 100;
                         return '₦' . number_format($amount, 2);
                     }),
-                Tables\Columns\TextColumn::make('payment_reference')
-                    ->label('Payment Reference'),
+                Tables\Columns\TextColumn::make('reference')
+                    ->label('Payment Reference')
+                    ->copyable(),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('payment_channel')
                     ->label('Channel'),
@@ -53,6 +73,7 @@ class PaymentResource extends Resource
                     ->label('Created At')
                     ->dateTime('d-m-Y'),
             ])
+            ->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
