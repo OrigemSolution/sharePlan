@@ -55,6 +55,9 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('slot.service.name')
                     ->label('Service')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('id')
+                    ->label('Slot ID')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('slot.creator.name')
                     ->label('Creator'),
                     Tables\Columns\TextColumn::make('amount')

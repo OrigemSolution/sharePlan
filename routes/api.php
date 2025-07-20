@@ -27,6 +27,12 @@ Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPass
 Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOTP']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
+// Paystack webhook (no auth required)
+Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
+
+// Contact routes
+Route::post('/contact', [ContactController::class, 'store']);
+
 // Public slot routes (Guests)
 Route::get('/slots/trending', [SlotController::class, 'trending']);
 Route::get('/slots', [SlotController::class, 'index']);
@@ -60,20 +66,14 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Service routes
-Route::prefix('services')->group(function () {
-    // Admin only routes
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-        Route::post('/add', [ServiceController::class, 'store']);
-        Route::put('/update/{id}', [ServiceController::class, 'update']);
-        Route::delete('/delete/{id}', [ServiceController::class, 'destroy']);
-    });
-});
-
-// Paystack webhook (no auth required)
-Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
-
-// Contact routes
-Route::post('/contact', [ContactController::class, 'store']); // Public route for sending messages
+// Route::prefix('services')->group(function () {
+//     // Admin only routes
+//     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+//         Route::post('/add', [ServiceController::class, 'store']);
+//         Route::put('/update/{id}', [ServiceController::class, 'update']);
+//         Route::delete('/delete/{id}', [ServiceController::class, 'destroy']);
+//     });
+// });
 
 // Admin contact routes
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
