@@ -119,70 +119,94 @@ class PaymentController extends Controller
 
     public function handleWebhook(Request $request)
     {
-        $paystack_secret = config('paystack.secretKey');
+        // 1. Verify Paystack signature
+        $paystackSecret = config('paystack.secretKey');
         $signature = $request->header('x-paystack-signature');
-        $computedSignature = hash_hmac('sha512', $request->getContent(), $paystack_secret);
+        $computedSignature = hash_hmac('sha512', $request->getContent(), $paystackSecret);
 
         if ($signature !== $computedSignature) {
-            \Log::warning('Invalid Paystack webhook signature', [
-                'signature' => $signature,
-                'computed' => $computedSignature,
-                'payload' => $request->all()
+            \Log::error('Invalid webhook signature', [
+                'received' => $signature,
+                'computed' => $computedSignature
             ]);
-            return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 400);
+            return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 401);
         }
 
         $payload = $request->all();
 
+        // 2. Validate payload structure
         if (!isset($payload['event'], $payload['data']['reference'])) {
-            \Log::warning('Malformed Paystack webhook payload', ['payload' => $payload]);
-            return response()->json(['status' => 'error', 'message' => 'Malformed payload'], 400);
+            \Log::warning('Invalid webhook payload', ['payload' => $payload]);
+            return response()->json(['status' => 'error', 'message' => 'Invalid payload'], 400);
         }
 
+        // 3. Only process successful charges
         if ($payload['event'] !== 'charge.success') {
-            return response()->json(['status' => 'success', 'message' => 'Event ignored']);
+            return response()->json(['status' => 'success', 'message' => 'Non-payment event ignored']);
         }
 
         DB::beginTransaction();
         try {
-            // 1. Update Payment
-            $payment = \App\Models\Payment::where('reference', $payload['data']['reference'])->first();
+            $reference = $payload['data']['reference'];
+            
+            // 4. Update Payment
+            $payment = Payment::where('reference', $reference)->first();
             if (!$payment) {
-                \Log::warning('Payment not found for reference', ['reference' => $payload['data']['reference']]);
+                \Log::warning('Payment not found', ['reference' => $reference]);
                 DB::rollBack();
                 return response()->json(['status' => 'error', 'message' => 'Payment not found'], 404);
             }
+
             $payment->update([
                 'status' => 'success',
                 'payment_channel' => $payload['data']['channel'] ?? null,
                 'metadata' => $payload['data']['metadata'] ?? null
             ]);
 
-            // 2. Update Slot
-            $slot = \App\Models\Slot::where('payment_reference', $payload['data']['reference'])->first();
-            if ($slot && $slot->payment_status !== 'paid') {
-                $slot->update([
-                    'status' => 'success',
-                    'payment_status' => 'paid',
-                    'is_active' => true
-                ]);
+            // 5. Handle Slot (for creators)
+            $slot = Slot::where('payment_reference', $reference)
+                    ->orWhere('id', $payment->metadata['slot_id'] ?? null)
+                    ->first();
+
+            if ($slot) {
+                $updateData = ['payment_status' => 'paid'];
+                
+                // Special handling for creator payments
+                if ($payment->user_id && $slot->user_id == $payment->user_id) {
+                    $updateData['is_active'] = true;
+                    $updateData['status'] = 'confirmed';
+                }
+                
+                $slot->update($updateData);
             }
 
-            // 3. Update SlotMember
-            $slotMember = \App\Models\SlotMember::where('payment_id', $payment->id)->first();
-            if ($slotMember && $slotMember->payment_status !== 'paid') {
+            // 6. Handle SlotMember (for guests)
+            $slotMember = SlotMember::where('payment_id', $payment->id)
+                        ->orWhere('member_email', $payload['data']['customer']['email'] ?? null)
+                        ->first();
+
+            if ($slotMember) {
                 $slotMember->update(['payment_status' => 'paid']);
             }
 
             DB::commit();
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Webhook processed'
+
+            \Log::info('Webhook processed successfully', [
+                'reference' => $reference,
+                'payment_id' => $payment->id,
+                'slot_updated' => $slot ? true : false,
+                'slot_member_updated' => $slotMember ? true : false
             ]);
+
+            return response()->json(['status' => 'success', 'message' => 'Webhook processed']);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Webhook processing failed', ['error' => $e->getMessage()]);
-            return response()->json(['status' => 'error', 'message' => 'Webhook processing failed'], 500);
+            \Log::error('Webhook processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['status' => 'error', 'message' => 'Processing failed'], 500);
         }
     }
 
