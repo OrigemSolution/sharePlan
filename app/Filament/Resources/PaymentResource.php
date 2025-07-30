@@ -56,6 +56,10 @@ class PaymentResource extends Resource
                     ->label('Service')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('id')
+                    ->label('Payment ID')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('slot_id')
                     ->label('Slot ID')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slot.creator.name')
@@ -71,10 +75,10 @@ class PaymentResource extends Resource
                     ->copyable(),
                 Tables\Columns\TextColumn::make('status'),
                 Tables\Columns\TextColumn::make('payment_channel')
-                    ->label('Channel'),
+                    ->label('Channel')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created At')
-                    ->dateTime('d-m-Y'),
+                    ->label('Created At'),
             ])
             ->defaultSort('id', 'desc')
             ->filters([
