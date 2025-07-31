@@ -1053,19 +1053,26 @@ class SlotController extends Controller
     {
         $days = $request->input('days', 7); // Allow override via query param
 
-        $trendingSlots = Slot::with(['service', 'user', 'members.payment'])
-            ->where('is_active', true)
-            ->withCount(['members' => function($query) use ($days) {
+        $trendingSlots = Slot::with([
+                'service',
+                'user',
+                'members' => function ($query) {
+                    $query->where('payment_status', 'paid'); // Load only paid members
+                }
+            ])
+            ->withCount(['members as recent_paid_members_count' => function ($query) use ($days) {
                 $query->where('payment_status', 'paid')
-                      ->where('created_at', '>=', now()->subDays($days));
+                    ->where('created_at', '>=', now()->subDays($days));
             }])
-            ->orderByDesc('members_count')
-            ->take(10)
+            ->where('is_active', true)
+            ->orderByDesc('recent_paid_members_count')
+            ->take(6)
             ->get();
 
-        // Add guest_price for each slot (same as index)
-        $utility = \App\Models\Utility::first();
+        // Add guest_price for each slot
+        $utility = Utility::first();
         $flatFee = $utility ? $utility->flat_fee : 0;
+
         $trendingSlots = $trendingSlots->map(function ($slot) use ($flatFee) {
             $service = $slot->service;
             $servicePrice = $service->price;
@@ -1073,10 +1080,20 @@ class SlotController extends Controller
             $duration = (int) $slot->duration;
             $perMemberPrice = $servicePrice / $maxMembers;
             $guestAmount = ($perMemberPrice + $flatFee) * $duration;
-            $slotArray = $slot->toArray();
-            $slotArray['guest_price'] = $guestAmount;
-            return $slotArray;
-        })->take(6)->values();
+
+            return [
+                'id' => $slot->id,
+                'user_id' => $slot->user_id,
+                'creator_name' => $slot->user ? $slot->user->name : null,
+                'status' => $slot->status,
+                'duration' => $slot->duration,
+                'current_members' => $slot->members->count(), // Now only paid members
+                'payment_status' => $slot->payment_status,
+                'service' => $slot->service,
+                // 'members' => $slot->members, // Optional: include if needed
+                'guest_price' => $guestAmount
+            ];
+        })->values(); // take(6) already applied above, values() reindexes
 
         return response()->json([
             'status' => 'success',
