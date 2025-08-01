@@ -29,7 +29,7 @@ class UserTableSeeder extends Seeder
             'password' => Hash::make('sHa12re0Pl@n#'),
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ]);
 
     }
 }
