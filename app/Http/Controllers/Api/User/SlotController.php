@@ -47,7 +47,7 @@ class SlotController extends Controller
                 $maxMembers = (int) $service->max_members;
                 $duration = (int) $slot->duration;
                 $perMemberPrice = $servicePrice / $maxMembers;
-                $guestAmount = ($perMemberPrice + $flatFee) * $duration;
+                $guestAmount = round(($perMemberPrice + $flatFee) * $duration);
                 return [
                     'id' => $slot->id,
                     'user_id' => $slot->user_id,
@@ -119,7 +119,7 @@ class SlotController extends Controller
             $duration = (int) $request->duration;
             // New creator formula: (service price / max_members - creator_percentage%) * duration
             $perMemberPrice = $servicePrice / $maxMembers;
-            $creatorAmount = round(($perMemberPrice - ($perMemberPrice * ($creatorPercentage / 100))) * $duration, 2);
+            $creatorAmount = round(($perMemberPrice - ($perMemberPrice * ($creatorPercentage / 100))) * $duration);
 
             // Create the slot
             $slot = Slot::create([
@@ -332,7 +332,7 @@ class SlotController extends Controller
             $maxMembers = (int) $service->max_members;
             $duration = (int) $slot->duration;
             $perMemberPrice = $servicePrice / $maxMembers;
-            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
+            $guestAmount = round(($perMemberPrice + $flatFee) * $duration);
             $data = [
                 'id' => $slot->id,
                 'user_id' => $slot->user_id,
@@ -521,7 +521,7 @@ class SlotController extends Controller
             $duration = (int) $slot->duration;
             // New guest formula: (service price / max_members + flat_fee) * duration
             $perMemberPrice = $servicePrice / $maxMembers;
-            $guestAmount = round(($perMemberPrice + $flatFee) * $duration, 2);
+            $guestAmount = round(($perMemberPrice + $flatFee) * $duration);
 
             if ($existingMember) {
                 // If member exists with paid status, block them
