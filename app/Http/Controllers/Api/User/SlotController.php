@@ -119,7 +119,7 @@ class SlotController extends Controller
             $duration = (int) $request->duration;
             // New creator formula: (service price / max_members - creator_percentage%) * duration
             $perMemberPrice = $servicePrice / $maxMembers;
-            $creatorAmount = ($perMemberPrice - ($perMemberPrice * ($creatorPercentage / 100))) * $duration;
+            $creatorAmount = round(($perMemberPrice - ($perMemberPrice * ($creatorPercentage / 100))) * $duration, 2);
 
             // Create the slot
             $slot = Slot::create([
@@ -521,7 +521,7 @@ class SlotController extends Controller
             $duration = (int) $slot->duration;
             // New guest formula: (service price / max_members + flat_fee) * duration
             $perMemberPrice = $servicePrice / $maxMembers;
-            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
+            $guestAmount = round(($perMemberPrice + $flatFee) * $duration, 2);
 
             if ($existingMember) {
                 // If member exists with paid status, block them
