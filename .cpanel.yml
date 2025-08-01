@@ -5,12 +5,14 @@ deployment:
     - export PUBLIC_PATH=$HOME/public_html
     - /bin/mkdir -p "$SHAREPLAN_PATH"
     - /bin/mkdir -p "$PUBLIC_PATH"
-    - /bin/cp -Rf * "$SHAREPLAN_PATH/" 2>/dev/null || true
-    - /bin/cp -Rf .[^.]* "$SHAREPLAN_PATH/" 2>/dev/null || true
-    - /bin/rm -rf "$SHAREPLAN_PATH/public"
-    - /bin/rm -rf "$SHAREPLAN_PATH/.git"
-    - /bin/rm -f "$SHAREPLAN_PATH/.cpanel.yml"
-    - /bin/cp -Rf public/* "$PUBLIC_PATH/" 2>/dev/null || true
-    - /bin/cp -Rf public/.[^.]* "$PUBLIC_PATH/" 2>/dev/null || true
+    - /bin/find . -mindepth 1 -maxdepth 1 ! -name public ! -name .git ! -name .cpanel.yml -exec cp -Rf {} "$SHAREPLAN_PATH/" \;
+    # Copy only CSS and JS from repo's public to public_html
+    - /bin/cp -Rf public/css "$PUBLIC_PATH/" 2>/dev/null || true
+    - /bin/cp -Rf public/js "$PUBLIC_PATH/" 2>/dev/null || true
+    # Copy all public assets EXCEPT index.php
+    - /bin/cp -Rf "$SHAREPLAN_PATH/public/." "$PUBLIC_PATH/" --exclude="index.php" 2>/dev/null || true
+    # Copy index.php ONLY if it doesn't already exist
+    - if [ ! -f "$PUBLIC_PATH/index.php" ]; then /bin/cp -f "$SHAREPLAN_PATH/public/index.php" "$PUBLIC_PATH/" 2>/dev/null || true; fi
+    # Cleanup operations
     - /bin/rm -rf "$PUBLIC_PATH/.git" 2>/dev/null || true
     - /bin/rm -f "$PUBLIC_PATH/.cpanel.yml" 2>/dev/null || true
