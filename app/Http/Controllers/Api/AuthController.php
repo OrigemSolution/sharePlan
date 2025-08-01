@@ -30,7 +30,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email',
             'bank' => 'required|string',
             'account_name' => 'required|string',
-            'account_no' => 'required|digits:11',
+            'account_no' => 'required|digits:10',
             'password' => 'required|min:6',
             'social_media' => 'required|array|min:3',
             'social_media.*.name' => 'required|string',
