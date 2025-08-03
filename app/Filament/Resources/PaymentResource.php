@@ -63,8 +63,15 @@ class PaymentResource extends Resource
                     ->label('Slot ID')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slot.creator.name')
-                    ->label('Creator'),
-                    Tables\Columns\TextColumn::make('amount')
+                    ->label('Creator')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('slotMember.member_name')
+                    ->label('Payer Email')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('slotMember.member_email')
+                    ->label('Payer Email')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('amount')
                     ->label('Amount (₦)')
                     ->formatStateUsing(function ($state) {
                         $amount = $state / 100;

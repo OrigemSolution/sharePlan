@@ -39,4 +39,9 @@ class Payment extends Model
     {
         return $this->belongsTo(Slot::class);
     }
+
+    public function slotMember()
+    {
+        return $this->belongsTo(SlotMember::class, 'id', 'payment_id');
+    }
 }

@@ -1066,10 +1066,9 @@ class SlotController extends Controller
             }])
             ->where('is_active', true)
             ->orderByDesc('recent_paid_members_count')
-            ->take(6)
             ->get();
 
-        // Add guest_price for each slot
+        // Add guest_price for each slot and filter out full slots
         $utility = Utility::first();
         $flatFee = $utility ? $utility->flat_fee : 0;
 
@@ -1079,7 +1078,8 @@ class SlotController extends Controller
             $maxMembers = (int) $service->max_members;
             $duration = (int) $slot->duration;
             $perMemberPrice = $servicePrice / $maxMembers;
-            $guestAmount = ($perMemberPrice + $flatFee) * $duration;
+            $guestAmount = round(($perMemberPrice + $flatFee) * $duration);
+            $paidMembersCount = $slot->members->count();
 
             return [
                 'id' => $slot->id,
@@ -1087,13 +1087,20 @@ class SlotController extends Controller
                 'creator_name' => $slot->user ? $slot->user->name : null,
                 'status' => $slot->status,
                 'duration' => $slot->duration,
-                'current_members' => $slot->members->count(), // Now only paid members
+                'current_members' => $paidMembersCount, // Now only paid members
+                'max_members' => $maxMembers,
                 'payment_status' => $slot->payment_status,
                 'service' => $slot->service,
                 // 'members' => $slot->members, // Optional: include if needed
                 'guest_price' => $guestAmount
             ];
-        })->values(); // take(6) already applied above, values() reindexes
+        })
+        ->filter(function ($slot) {
+            // Filter out slots where paid members equal or exceed max members
+            return $slot['current_members'] < $slot['max_members'];
+        })
+        ->take(6)
+        ->values(); // values() reindexes
 
         return response()->json([
             'status' => 'success',

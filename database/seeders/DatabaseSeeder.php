@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             RoleTableSeeder::class,
             UserTableSeeder::class,
             UtilitySeeder::class,
+            SlotTestSeeder::class, // Add this for testing trending functionality
         ]);
     }
 }
