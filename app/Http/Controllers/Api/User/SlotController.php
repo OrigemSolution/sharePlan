@@ -48,19 +48,30 @@ class SlotController extends Controller
                 $duration = (int) $slot->duration;
                 $perMemberPrice = $servicePrice / $maxMembers;
                 $guestAmount = round(($perMemberPrice + $flatFee) * $duration);
+                $currentMembers = $slot->members->count(); // Count of paid members only
+                $isAvailable = $currentMembers < $maxMembers;
+                
                 return [
                     'id' => $slot->id,
                     'user_id' => $slot->user_id,
                     'creator_name' => $slot->user ? $slot->user->name : null,
                     'status' => $slot->status,
                     'duration' => $slot->duration,
-                    'current_members' => $slot->members->count(), // Count of paid members only
+                    'current_members' => $currentMembers,
+                    'max_members' => $maxMembers,
+                    'is_available' => $isAvailable,
                     'payment_status' => $slot->payment_status,
                     'service' => $slot->service,
                     'members' => $slot->members, 
                     'guest_price' => $guestAmount
                 ];
             });
+
+            // Sort slots: available slots first, then filled slots
+            $data = $data->sortBy([
+                ['is_available', 'desc'], // Available slots first (true comes before false)
+                ['created_at', 'desc']    // Then by creation date (newest first)
+            ])->values();
 
             return response()->json([
                 'status' => 'success',
