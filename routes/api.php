@@ -33,6 +33,10 @@ Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
 // Contact routes
 Route::post('/contact', [ContactController::class, 'store']);
 
+//public service routes (Guests)
+Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services/{id}', [ServiceController::class, 'show']);
+
 // Public slot routes (Guests)
 Route::get('/slots/trending', [SlotController::class, 'trending']);
 Route::get('/slots', [SlotController::class, 'index']);
@@ -42,8 +46,8 @@ Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGues
 Route::post('/slots/{id}/resume-guest-payment', [SlotController::class, 'resumeGuestPayment']);
 Route::get('/slots_utility', [SlotController::class, 'utility']);
 
-// Resource route for slots
-Route::apiResource('slots', SlotController::class);
+// // Resource route for slots
+// Route::apiResource('slots', SlotController::class);
 
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -53,8 +57,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 
     //Service routes
-    Route::get('/services', [ServiceController::class, 'index']);
-    Route::get('/services/{id}', [ServiceController::class, 'show']);
+    // Route::get('/services', [ServiceController::class, 'index']);
+    // Route::get('/services/{id}', [ServiceController::class, 'show']);
     Route::get('/payments/my-payments', [PaymentController::class, 'getUserPayments']);
     
     // Authenticated user slot routes
