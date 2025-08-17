@@ -77,6 +77,7 @@ class UserResource extends Resource
                                         'instagram' => 'Instagram',
                                         'linkedin' => 'LinkedIn',
                                         'tiktok' => 'TikTok',
+                                        'youtube' => 'YouTube',
                                     ])
                                     ->required(),
                                 Forms\Components\TextInput::make('handle')
@@ -190,6 +191,7 @@ class UserResource extends Resource
                                         'instagram' => "https://instagram.com/{$record->handle}",
                                         'linkedin' => "https://linkedin.com/in/{$record->handle}",
                                         'tiktok' => "https://tiktok.com/@{$record->handle}",
+                                        'youtube' => "https://youtube.com/@{$record->handle}",
                                         default => null,
                                     })
                                     ->openUrlInNewTab(),
