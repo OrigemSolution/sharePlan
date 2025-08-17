@@ -48,11 +48,18 @@ class UserResource extends Resource
                             ->maxLength(255),
                         Forms\Components\TextInput::make('phone')
                             ->tel()
-                            ->required()
                             ->maxLength(20),
                         Forms\Components\TextInput::make('whatsapp_phone')
                             ->tel()
+                            ->required()
                             ->maxLength(20),
+                        Forms\Components\TextInput::make('password')
+                            ->password()
+                            ->required()
+                            ->minLength(8)
+                            ->maxLength(255)
+                            ->dehydrateStateUsing(fn ($state) => bcrypt($state))
+                            ->dehydrated(fn ($state) => filled($state)),
                     ])->columns(2),
                 
                 Forms\Components\Section::make('Bank Details')
