@@ -59,7 +59,8 @@ class UserResource extends Resource
                             ->minLength(8)
                             ->maxLength(255)
                             ->dehydrateStateUsing(fn ($state) => bcrypt($state))
-                            ->dehydrated(fn ($state) => filled($state)),
+                            ->dehydrated(fn ($state) => filled($state))
+                            ->hiddenOn('edit'),
                     ])->columns(2),
                 
                 Forms\Components\Section::make('Bank Details')
@@ -119,9 +120,14 @@ class UserResource extends Resource
                     
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                    
+                
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
+                    
+                Tables\Columns\TextColumn::make('WhatsApp No.')
+                    ->label('WhatsApp No.')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                     
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
