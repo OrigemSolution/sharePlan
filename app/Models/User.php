@@ -27,7 +27,9 @@ class User extends Authenticatable
         'account_name',
         'password',
         'status',
-        'role_id'
+        'role_id',
+        'otp',
+        'otp_expires_at'
     ];
 
     /**
@@ -47,6 +49,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'otp_expires_at' => 'datetime',
     ];
 
     public function role()

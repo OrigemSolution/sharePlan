@@ -23,8 +23,8 @@ use App\Http\Controllers\PaymentController;
 // Public auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/forgot-password/send-otp', [AuthController::class, 'sendForgotPasswordOTP']);
-Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOTP']);
+Route::post('/forgot-password/send', [AuthController::class, 'sendForgotPasswordOTP']);
+Route::post('/forgot-password/verify', [AuthController::class, 'verifyForgotPasswordOTP']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // Paystack webhook (no auth required)
