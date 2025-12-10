@@ -12,6 +12,7 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'service_id',
+        'password_service_id',
         'slot_id',
         'amount',
         'reference',
@@ -44,4 +45,10 @@ class Payment extends Model
     {
         return $this->belongsTo(SlotMember::class, 'id', 'payment_id');
     }
+
+    public function passwordService()
+    {
+        return $this->belongsTo(PasswordService::class, 'password_service_id');
+    }
 }
+

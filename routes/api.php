@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\User\SlotController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Api\User\PasswordSharingController; // added
 
 /*
 |--------------------------------------------------------------------------
@@ -46,9 +47,11 @@ Route::post('/slots/guest/confirm-payment', [SlotController::class, 'confirmGues
 Route::post('/slots/{id}/resume-guest-payment', [SlotController::class, 'resumeGuestPayment']);
 Route::get('/slots_utility', [SlotController::class, 'utility']);
 
-// // Resource route for slots
-// Route::apiResource('slots', SlotController::class);
-
+// Public password sharing routes (Guests)
+    Route::get('/password-sharing', [PasswordSharingController::class, 'index']);
+    Route::get('/password-sharing/{id}', [PasswordSharingController::class, 'show']);
+    Route::post('/password-sharing/{id}/join-as-guest', [PasswordSharingController::class, 'joinAsGuest']);
+    Route::post('/password-sharing/guest/confirm-payment', [PasswordSharingController::class, 'confirmPayment']);
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
@@ -67,17 +70,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/slots/{id}', [SlotController::class, 'update']);
     Route::delete('/slots/{id}', [SlotController::class, 'destroy']);
     Route::post('/slots/{id}/resume-payment', [SlotController::class, 'resumeCreatorPayment']);
+    // Authenticated user password sharing routes
+    Route::post('/password-sharing/add', [PasswordSharingController::class, 'create']);
+    Route::post('/password-sharing/confirm-payment', [PasswordSharingController::class, 'confirmPayment']);
+    Route::put('/slots/{id}', [SlotController::class, 'update']);
+    Route::delete('/slots/{id}', [SlotController::class, 'destroy']);
+    Route::post('/slots/{id}/resume-payment', [SlotController::class, 'resumeCreatorPayment']);
 });
-
-// Service routes
-// Route::prefix('services')->group(function () {
-//     // Admin only routes
-//     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-//         Route::post('/add', [ServiceController::class, 'store']);
-//         Route::put('/update/{id}', [ServiceController::class, 'update']);
-//         Route::delete('/delete/{id}', [ServiceController::class, 'destroy']);
-//     });
-// });
 
 // Admin contact routes
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
