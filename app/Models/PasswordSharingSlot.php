@@ -30,7 +30,7 @@ class PasswordSharingSlot extends Model
         'is_active' => 'boolean'
     ];
 
-    public function PasswordService(): BelongsTo
+    public function service(): BelongsTo
     {
         return $this->belongsTo(PasswordService::class, 'password_service_id');
     }

@@ -131,12 +131,12 @@ class PasswordSharingController extends Controller
             $reference = Paystack::genTranxRef();
             // create payment record for creator
             $payment = Payment::create([
-                'user_id'             => $user->id,
-                'password_service_id' => $service->id,
-                'slot_id'             => $slot->id,
-                'amount'              => $amount,
-                'status'              => 'pending',
-                'reference'           => $reference,
+                'user_id'                   => $user->id,
+                'password_service_id'       => $service->id,
+                'password_sharing_slot_id'  => $slot->id,
+                'amount'                    => $amount,
+                'status'                    => 'pending',
+                'reference'                 => $reference,
             ]);
 
             // Creator becomes first member (pending payment)
@@ -308,11 +308,11 @@ class PasswordSharingController extends Controller
 
             $reference = Paystack::genTranxRef();
             $payment = Payment::create([
-                'password_service_id' => $slot->password_service_id,
-                'slot_id'             => $slot->id,
-                'amount'              => $amount,
-                'status'              => 'pending',
-                'reference'           => $reference,
+                'password_service_id'       => $slot->password_service_id,
+                'password_sharing_slot_id'  => $slot->id,
+                'amount'                    => $amount,
+                'status'                    => 'pending',
+                'reference'                 => $reference,
             ]);
             $slotMember->update(['payment_id' => $payment->id]);
 

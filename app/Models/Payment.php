@@ -14,6 +14,7 @@ class Payment extends Model
         'service_id',
         'password_service_id',
         'slot_id',
+        'password_sharing_slot_id',
         'amount',
         'reference',
         'status',
@@ -41,6 +42,11 @@ class Payment extends Model
         return $this->belongsTo(Slot::class);
     }
 
+    public function passwordSharingSlot()
+    {
+        return $this->belongsTo(PasswordSharingSlot::class, 'password_sharing_slot_id');
+    }
+
     public function slotMember()
     {
         return $this->belongsTo(SlotMember::class, 'id', 'payment_id');
@@ -51,4 +57,4 @@ class Payment extends Model
         return $this->belongsTo(PasswordService::class, 'password_service_id');
     }
 }
-
+

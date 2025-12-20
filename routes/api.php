@@ -70,11 +70,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/slots/{id}', [SlotController::class, 'update']);
     Route::delete('/slots/{id}', [SlotController::class, 'destroy']);
     Route::post('/slots/{id}/resume-payment', [SlotController::class, 'resumeCreatorPayment']);
+
     // Authenticated user password sharing routes
     Route::post('/password-sharing/add', [PasswordSharingController::class, 'create']);
     Route::post('/password-sharing/confirm-payment', [PasswordSharingController::class, 'confirmPayment']);
-    Route::put('/slots/{id}', [SlotController::class, 'update']);
-    Route::delete('/slots/{id}', [SlotController::class, 'destroy']);
+
+    //Password sharing service route;
+    Route::get('/password-sharing/services', [ServiceController::class, 'passwordServices']);
+Route::get('/password-sharing/service/{id}', [ServiceController::class, 'passwordService']);
     Route::post('/slots/{id}/resume-payment', [SlotController::class, 'resumeCreatorPayment']);
 });
 

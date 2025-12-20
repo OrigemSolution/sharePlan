@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\PasswordService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -167,5 +168,25 @@ class ServiceController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function passwordServices()
+    {
+        $services = PasswordService::get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $services
+        ]);
+    }
+
+    public function passwordService($id)
+    {
+        $service = PasswordService::findOrFail($id);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $service
+        ]);
     }
 }
