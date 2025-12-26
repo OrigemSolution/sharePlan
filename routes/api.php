@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\User\SlotController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\Api\User\PasswordSharingController; // added
+use App\Http\Controllers\Api\User\PasswordSharingController;
 
 /*
 |--------------------------------------------------------------------------
