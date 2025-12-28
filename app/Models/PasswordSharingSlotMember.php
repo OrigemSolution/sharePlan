@@ -13,7 +13,7 @@ class PasswordSharingSlotMember extends Model
     protected $table = 'password_sharing_slot_members';
 
     protected $fillable = [
-        'slot_id',
+        'password_sharing_slot_id',
         'user_id',
         'member_name',
         'member_email',
@@ -24,7 +24,7 @@ class PasswordSharingSlotMember extends Model
 
     public function slot(): BelongsTo
     {
-        return $this->belongsTo(PasswordSharingSlot::class, 'slot_id');
+        return $this->belongsTo(PasswordSharingSlot::class, 'password_sharing_slot_id');
     }
 
     public function user(): BelongsTo

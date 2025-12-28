@@ -142,7 +142,7 @@ class PasswordSharingController extends Controller
             // Creator becomes first member (pending payment)
             PasswordSharingSlotMember::create([
                 'user_id'        => $user->id,
-                'slot_id'        => $slot->id,
+                'password_sharing_slot_id' => $slot->id,
                 'payment_status' => 'pending',
             ]);
 
@@ -245,7 +245,7 @@ class PasswordSharingController extends Controller
             $slot->save();
 
             // update slot member
-            $member = PasswordSharingSlotMember::where('slot_id', $slot->id)
+            $member = PasswordSharingSlotMember::where('password_sharing_slot_id', $slot->id)
                         ->where(function ($q) use ($payment) {
                             $q->where('payment_id', $payment->id)
                               ->orWhere('user_id', $payment->user_id);
@@ -283,11 +283,11 @@ class PasswordSharingController extends Controller
             if ($slot->status !== 'open') {
                 return response()->json(['status' => 'error', 'message' => 'Slot not open for joining'], 400);
             }
-            $paid = PasswordSharingSlotMember::where('slot_id', $slot->id)->where('payment_status', 'paid')->count();
+            $paid = PasswordSharingSlotMember::where('password_sharing_slot_id', $slot->id)->where('payment_status', 'paid')->count();
             if ($paid >= $slot->guest_limit) {
                 return response()->json(['status' => 'error', 'message' => 'Slot is full'], 400);
             }
-            $existing = PasswordSharingSlotMember::where('slot_id', $slot->id)->where('member_email', $request->email)->first();
+            $existing = PasswordSharingSlotMember::where('password_sharing_slot_id', $slot->id)->where('member_email', $request->email)->first();
             if ($existing && $existing->payment_status === 'paid') {
                 return response()->json(['status' => 'error', 'message' => 'Email already joined'], 400);
             }
@@ -298,7 +298,7 @@ class PasswordSharingController extends Controller
             $amount = ($perMember + $flatFee) * $slot->duration;
 
             $slotMember = $existing ?? PasswordSharingSlotMember::create([
-                'slot_id'        => $slot->id,
+                'password_sharing_slot_id' => $slot->id,
                 'user_id'        => null,
                 'member_name'    => $request->full_name,
                 'member_email'   => $request->email,

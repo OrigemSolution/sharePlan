@@ -42,7 +42,7 @@ class PasswordSharingSlot extends Model
 
     public function members(): HasMany
     {
-        return $this->hasMany(PasswordSharingSlotMember::class, 'slot_id');
+        return $this->hasMany(PasswordSharingSlotMember::class, 'password_sharing_slot_id');
     }
 }
 
