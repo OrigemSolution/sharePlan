@@ -85,6 +85,13 @@ class PasswordSharingController extends Controller
      */
     public function create(Request $request)
     {
+        // Check if user is verified
+        if ($request->user()->status !== 'verified') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Only verified users can create slots'
+            ], 403);
+        }
         $validator = Validator::make($request->all(), [
             'password_service_id' => 'required|exists:password_services,id',
             'duration'            => 'required|integer|min:1',
@@ -116,34 +123,44 @@ class PasswordSharingController extends Controller
             $flatFee        = $utility ? $utility->flat_fee : 0;
 
             $amount = ($perMemberPrice + $flatFee) * $request->duration;
-
+            
+            // Create the PS slot
             $slot = PasswordSharingSlot::create([
                 'password_service_id' => $service->id,
                 'user_id'             => $user->id,
                 'guest_limit'         => $request->guest_limit,
-                'current_members'     => 0,
+                'current_members'     => 1,
                 'duration'            => $request->duration,
                 'status'              => 'open',
                 'payment_status'      => 'pending',
-                'is_active'           => true,
+                'is_active'           => false // PS Slot is not active until payment is confirmed
             ]);
 
+            // Generate Paystack payment reference
             $reference = Paystack::genTranxRef();
             // create payment record for creator
             $payment = Payment::create([
                 'user_id'                   => $user->id,
                 'password_service_id'       => $service->id,
                 'password_sharing_slot_id'  => $slot->id,
-                'amount'                    => $amount,
+                'amount'                    => $amount * 100, // kobo
                 'status'                    => 'pending',
                 'reference'                 => $reference,
+                'currency'                  => 'NGN',
             ]);
+
+            // Update slot with payment reference
+            $slot->update(['payment_reference' => $reference]);
 
             // Creator becomes first member (pending payment)
             PasswordSharingSlotMember::create([
                 'user_id'        => $user->id,
+                'member_name' => $user->name,
+                'member_email' => $user->email,
+                'member_phone' => $user->phone,
                 'password_sharing_slot_id' => $slot->id,
                 'payment_status' => 'pending',
+                'payment_id' => $payment->id,
             ]);
 
             // Initiate Paystack transaction
@@ -152,27 +169,28 @@ class PasswordSharingController extends Controller
                 'user_id'       => $user->id,
                 'guest_type'    => 'creator',
                 'platform_fee'  => $flatFee,
+                'per_member_price' => $perMemberPrice,
+                'password_sharing_service_name' => $service->name,
+                'payment_id' => $payment->id,
             ];
 
             $paymentData = [
-                'amount'          => $amount * 100, // kobo
+                'amount'          => $payment->amount, // Already in kobo from payment record
                 'email'           => $user->email,
-                'reference'       => Paystack::genTranxRef(),
+                'reference'       => $payment->reference,
                 'currency'        => 'NGN',
                 'metadata'        => $metadata,
-                'callback_url'    => config('services.paystack.callback_url'),
             ];
 
-            $response = Paystack::getAuthorizationUrl($paymentData)->redirectNow();
-            // Save generated reference
-            $payment->update(['reference' => $paymentData['reference']]);
-            $slot->update(['payment_reference' => $paymentData['reference']]);
+            // Get authorization URL (not redirectNow for API response)
+            $authorizationUrl = Paystack::getAuthorizationUrl($paymentData)->url;
 
             DB::commit();
 
             return response()->json([
                 'status'         => 'success',
-                'authorization'  => $response->getTargetUrl(),
+                'message' => 'Password Sharing Slot created successfully. Please complete payment.',
+                'authorization_url'  => $authorizationUrl,
                 'reference'      => $paymentData['reference'],
                 'amount'         => $amount,
             ]);
@@ -310,9 +328,10 @@ class PasswordSharingController extends Controller
             $payment = Payment::create([
                 'password_service_id'       => $slot->password_service_id,
                 'password_sharing_slot_id'  => $slot->id,
-                'amount'                    => $amount,
+                'amount'                    => $amount * 100, // kobo
                 'status'                    => 'pending',
                 'reference'                 => $reference,
+                'currency'                  => 'NGN',
             ]);
             $slotMember->update(['payment_id' => $payment->id]);
 
@@ -321,17 +340,16 @@ class PasswordSharingController extends Controller
                 'slot_member_id' => $slotMember->id,
                 'guest_type'     => 'guest',
                 'platform_fee'   => $flatFee,
+                'payment_id'     => $payment->id,
             ];
             $paymentData = [
-                'amount'       => $amount * 100,
+                'amount'       => $payment->amount, // Already in kobo from payment record
                 'email'        => $request->email,
-                'reference'    => Paystack::genTranxRef(),
+                'reference'    => $payment->reference,
                 'currency'     => 'NGN',
                 'metadata'     => $metadata,
-                'callback_url' => config('services.paystack.callback_url'),
             ];
             $authorizationUrl = Paystack::getAuthorizationUrl($paymentData)->url;
-            $payment->update(['reference' => $paymentData['reference']]);
             DB::commit();
 
             return response()->json(['status' => 'success', 'data' => [

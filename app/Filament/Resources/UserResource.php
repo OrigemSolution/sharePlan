@@ -124,7 +124,7 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                     
-                Tables\Columns\TextColumn::make('WhatsApp No.')
+                Tables\Columns\TextColumn::make('whatsapp_phone')
                     ->label('WhatsApp No.')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
