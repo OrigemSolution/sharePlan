@@ -26,7 +26,8 @@ class PasswordServiceResource extends Resource
     protected static ?string $model = PasswordService::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'Password Sharing';
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

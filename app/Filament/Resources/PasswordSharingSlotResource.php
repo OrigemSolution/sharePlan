@@ -21,13 +21,15 @@ class PasswordSharingSlotResource extends Resource
     protected static ?string $model = PasswordSharingSlot::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Password Sharing';
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Select::make('password_service_id')
-                    ->relationship('PasswordService', 'name')
+                    ->relationship('service', 'name')
                     ->required(),
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name')
@@ -64,24 +66,24 @@ class PasswordSharingSlotResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('PasswordService.name')
+                Tables\Columns\TextColumn::make('service.name')
                     ->sortable()
                     ->label('Password Service')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->numeric()
                     ->sortable()
-                    ->label('User')
+                    ->label('Creator')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('guest_limit')
                     ->numeric()
                     ->sortable()
-                    ->label('Guest Limit')
+                    ->label('Required Guests')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('current_members')
                     ->numeric()
                     ->sortable()
-                    ->label('Current Members')
+                    ->label('Current Guests')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('duration')
                     ->numeric()
@@ -89,9 +91,9 @@ class PasswordSharingSlotResource extends Resource
                     ->label('Duration')
                     ->suffix(' month(s)')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('status')
+                Tables\Columns\ToggleColumn::make('status')
                     ->label('Status')
-                    ->searchable(),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label('Payment Status')
                     ->searchable()
@@ -120,14 +122,14 @@ class PasswordSharingSlotResource extends Resource
     {
         return $infolist
             ->schema([
-                TextEntry::make('PasswordService.name')
+                TextEntry::make('service.name')
                     ->label('Password Service'),
                 TextEntry::make('user.name')
-                    ->label('User'),
+                    ->label('Creator'),
                 TextEntry::make('guest_limit')
-                    ->label('Guest Limit'),
+                    ->label('Required Guests'),
                 TextEntry::make('current_members')
-                    ->label('Current Members'),
+                    ->label('Current Guests'),
                 TextEntry::make('duration')
                     ->label('Duration')
                     ->suffix(' month(s)'),

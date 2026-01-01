@@ -22,9 +22,11 @@ class SlotResource extends Resource
     protected static ?string $model = Slot::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected static ?string $navigationGroup = 'Core';
     
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 1;
     
     public static function canCreate(): bool
     {

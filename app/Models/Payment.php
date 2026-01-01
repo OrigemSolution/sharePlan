@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Payment extends Model
 {
@@ -55,6 +56,11 @@ class Payment extends Model
     public function passwordService()
     {
         return $this->belongsTo(PasswordService::class, 'password_service_id');
+    }
+
+    public function passwordSharingSlotMember(): HasOne
+    {
+        return $this->hasOne(PasswordSharingSlotMember::class, 'payment_id');
     }
 }
 

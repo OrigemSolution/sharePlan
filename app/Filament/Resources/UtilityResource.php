@@ -19,6 +19,7 @@ class UtilityResource extends Resource
     protected static ?string $model = Utility::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Others';
 
     protected static ?int $navigationSort = 6;
 

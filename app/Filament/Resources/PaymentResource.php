@@ -22,6 +22,8 @@ class PaymentResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    protected static ?string $navigationGroup = 'Others';
+
     public static function canCreate(): bool
     {
         // Prevent creating new transactions
@@ -52,24 +54,74 @@ class PaymentResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('slot.service.name')
-                    ->label('Service')
+                Tables\Columns\TextColumn::make('payment_type')
+                    ->label('Payment Type')
+                    ->getStateUsing(function ($record) {
+                        if ($record->password_sharing_slot_id) {
+                            return 'Password Sharing';
+                        }
+                        return 'Regular Slot';
+                    })
+                    ->badge()
+                    ->color(fn ($state) => $state === 'Password Sharing' ? 'success' : 'primary')
+                    ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('id')
-                    ->label('Payment ID')
-                    ->toggleable(isToggledHiddenByDefault: true)
+                Tables\Columns\TextColumn::make('service_name')
+                    ->label('Service')
+                    ->getStateUsing(function ($record) {
+                        if ($record->password_sharing_slot_id && $record->passwordSharingSlot) {
+                            return $record->passwordSharingSlot->service->name ?? 'N/A';
+                        }
+                        if ($record->slot && $record->slot->service) {
+                            return $record->slot->service->name ?? 'N/A';
+                        }
+                        return 'N/A';
+                    })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('slot_id')
                     ->label('Slot ID')
+                    ->getStateUsing(function ($record) {
+                        if ($record->password_sharing_slot_id) {
+                            return 'PS-' . $record->password_sharing_slot_id;
+                        }
+                        return $record->slot_id ? 'S-' . $record->slot_id : 'N/A';
+                    })
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slot.creator.name')
+                Tables\Columns\TextColumn::make('creator')
                     ->label('Creator')
+                    ->getStateUsing(function ($record) {
+                        if ($record->password_sharing_slot_id && $record->passwordSharingSlot) {
+                            return $record->passwordSharingSlot->user->name ?? 'N/A';
+                        }
+                        if ($record->slot && $record->slot->creator) {
+                            return $record->slot->creator->name ?? 'N/A';
+                        }
+                        return 'N/A';
+                    })
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('slotMember.member_name')
-                    ->label('Payer Email')
+                Tables\Columns\TextColumn::make('payer_name')
+                    ->label('Payer Name')
+                    ->getStateUsing(function ($record) {
+                        if ($record->passwordSharingSlotMember) {
+                            return $record->passwordSharingSlotMember->member_name ?? 'N/A';
+                        }
+                        if ($record->slotMember) {
+                            return $record->slotMember->member_name ?? 'N/A';
+                        }
+                        return 'N/A';
+                    })
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slotMember.member_email')
+                Tables\Columns\TextColumn::make('payer_email')
                     ->label('Payer Email')
+                    ->getStateUsing(function ($record) {
+                        if ($record->passwordSharingSlotMember) {
+                            return $record->passwordSharingSlotMember->member_email ?? 'N/A';
+                        }
+                        if ($record->slotMember) {
+                            return $record->slotMember->member_email ?? 'N/A';
+                        }
+                        return 'N/A';
+                    })
                     ->searchable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount (₦)')
@@ -85,10 +137,37 @@ class PaymentResource extends Resource
                     ->label('Channel')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created At'),
+                    ->label('Created At')
+                    ->dateTime()
+                    ->sortable(),
             ])
+            ->modifyQueryUsing(function (Builder $query) {
+                return $query->with([
+                    'slot.service',
+                    'slot.creator',
+                    'slotMember',
+                    'passwordSharingSlot.service',
+                    'passwordSharingSlot.user',
+                    'passwordSharingSlotMember',
+                ]);
+            })
             ->defaultSort('id', 'desc')
             ->filters([
+                Tables\Filters\SelectFilter::make('payment_type')
+                    ->label('Payment Type')
+                    ->options([
+                        'regular' => 'Regular Slot',
+                        'password_sharing' => 'Password Sharing',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if ($data['value'] === 'regular') {
+                            return $query->whereNotNull('slot_id')->whereNull('password_sharing_slot_id');
+                        }
+                        if ($data['value'] === 'password_sharing') {
+                            return $query->whereNotNull('password_sharing_slot_id');
+                        }
+                        return $query;
+                    }),
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'open' => 'Open',
