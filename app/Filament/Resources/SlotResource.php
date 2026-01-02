@@ -23,7 +23,7 @@ class SlotResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
 
-    protected static ?string $navigationGroup = 'Core';
+    protected static ?string $navigationGroup = 'Family Plan';
     
 
     protected static ?int $navigationSort = 1;
