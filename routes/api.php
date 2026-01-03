@@ -49,9 +49,16 @@ Route::get('/slots_utility', [SlotController::class, 'utility']);
 
 // Public password sharing routes (Guests)
     Route::get('/password-sharing', [PasswordSharingController::class, 'index']);
-    Route::get('/password-sharing/{id}', [PasswordSharingController::class, 'show']);
     Route::post('/password-sharing/{id}/join-as-guest', [PasswordSharingController::class, 'joinAsGuest']);
     Route::post('/password-sharing/guest/confirm-payment', [PasswordSharingController::class, 'confirmPayment']);
+    
+    // Password sharing service routes - must come before /password-sharing/{id} to avoid route conflict
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/password-sharing/services', [ServiceController::class, 'passwordServices']);
+        Route::get('/password-sharing/service/{id}', [ServiceController::class, 'passwordService']);
+    });
+    
+    Route::get('/password-sharing/{id}', [PasswordSharingController::class, 'show']);
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'getUser']);
@@ -74,11 +81,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Authenticated user password sharing routes
     Route::post('/password-sharing/add', [PasswordSharingController::class, 'create']);
     Route::post('/password-sharing/confirm-payment', [PasswordSharingController::class, 'confirmPayment']);
-
-    //Password sharing service route;
-    Route::get('/password-sharing/services', [ServiceController::class, 'passwordServices']);
-Route::get('/password-sharing/service/{id}', [ServiceController::class, 'passwordService']);
-    Route::post('/slots/{id}/resume-payment', [SlotController::class, 'resumeCreatorPayment']);
 });
 
 // Admin contact routes

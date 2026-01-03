@@ -15,9 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class PasswordSharingController extends Controller
 {
-    /**
-     * Display a list of available password-sharing slots.
-     */
+
     public function index(Request $request)
     {
         try {
