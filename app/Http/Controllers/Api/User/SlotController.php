@@ -344,13 +344,14 @@ class SlotController extends Controller
             $duration = (int) $slot->duration;
             $perMemberPrice = $servicePrice / $maxMembers;
             $guestAmount = round(($perMemberPrice + $flatFee) * $duration);
+            $currentMembers = $slot->members->where('payment_status', 'paid')->count();
             $data = [
                 'id' => $slot->id,
                 'user_id' => $slot->user_id,
                 'creator_name' => $slot->user ? $slot->user->name : null,
                 'status' => $slot->status,
                 'duration' => $slot->duration,
-                'current_members' => $slot->current_members,
+                'current_members' => $currentMembers, // Count of paid members only
                 'payment_status' => $slot->payment_status,
                 'service' => $slot->service,
                 'members' => $slot->members, 

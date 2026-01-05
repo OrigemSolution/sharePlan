@@ -20,9 +20,9 @@ class PasswordSharingController extends Controller
     {
         try {
             $query = PasswordSharingSlot::with([
-                'service',
+                'passwordService',
                 'user',
-                'members' => function ($q) {
+                'passwordSharingSlotMembers' => function ($q) {
                     $q->where('payment_status', 'paid');
                 }
             ]);
@@ -43,13 +43,13 @@ class PasswordSharingController extends Controller
             $flatFee  = $utility ? $utility->flat_fee : 0;
 
             $data = $slots->map(function ($slot) use ($flatFee) {
-                $service          = $slot->service;
+                $service          = $slot->passwordService;
                 $servicePrice     = $service->price;
                 $guestLimit       = (int) $slot->guest_limit;
                 $duration         = (int) $slot->duration;
                 $perMemberPrice   = $servicePrice / max($guestLimit, 1);
                 $guestAmount      = round(($perMemberPrice + $flatFee) * $duration);
-                $paidMembers      = $slot->members->count();
+                $paidMembers      = $slot->passwordSharingSlotMembers->where('payment_status', 'paid')->count();
 
                 return [
                     'id'              => $slot->id,
@@ -295,7 +295,7 @@ class PasswordSharingController extends Controller
 
         DB::beginTransaction();
         try {
-            $slot = PasswordSharingSlot::with('service')->findOrFail($id);
+            $slot = PasswordSharingSlot::with('passwordService')->findOrFail($id);
             if ($slot->status !== 'open') {
                 return response()->json(['status' => 'error', 'message' => 'Slot not open for joining'], 400);
             }
@@ -310,7 +310,7 @@ class PasswordSharingController extends Controller
 
             $utility = Utility::first();
             $flatFee = $utility ? $utility->flat_fee : 0;
-            $perMember = $slot->service->price / $slot->guest_limit;
+            $perMember = $slot->passwordService->price / $slot->guest_limit;
             $amount = ($perMember + $flatFee) * $slot->duration;
 
             $slotMember = $existing ?? PasswordSharingSlotMember::create([
@@ -324,7 +324,7 @@ class PasswordSharingController extends Controller
 
             $reference = Paystack::genTranxRef();
             $payment = Payment::create([
-                'password_service_id'       => $slot->password_service_id,
+                'password_service_id'       => $slot->passwordService->id,
                 'password_sharing_slot_id'  => $slot->id,
                 'amount'                    => $amount * 100, // kobo
                 'status'                    => 'pending',
@@ -335,9 +335,11 @@ class PasswordSharingController extends Controller
 
             $metadata = [
                 'slot_id'        => $slot->id,
+                'service_id'     => $slot->passwordService->id,
                 'slot_member_id' => $slotMember->id,
                 'guest_type'     => 'guest',
                 'platform_fee'   => $flatFee,
+                'per_member_price' => $perMember,
                 'payment_id'     => $payment->id,
             ];
             $paymentData = [
@@ -367,14 +369,14 @@ class PasswordSharingController extends Controller
     public function show($id)
     {
         try {
-            $slot = PasswordSharingSlot::with(['service', 'user', 'members' => function ($q) {
+            $slot = PasswordSharingSlot::with(['passwordService', 'user', 'passwordSharingSlotMembers' => function ($q) {
                 $q->where('payment_status', 'paid');
             }])->findOrFail($id);
 
             $utility = Utility::first();
             $flatFee = $utility ? $utility->flat_fee : 0;
-            $perMember = $slot->service->price / $slot->guest_limit;
-            $guestAmount = ($perMember + $flatFee) * $slot->duration;
+            $perMemberPrice = $slot->passwordService->price / $slot->guest_limit;
+            $guestAmount = ($perMemberPrice + $flatFee) * $slot->duration;
 
             $data = [
                 'id'              => $slot->id,
@@ -382,12 +384,12 @@ class PasswordSharingController extends Controller
                 'creator_name'    => optional($slot->user)->name,
                 'status'          => $slot->status,
                 'duration'        => $slot->duration,
-                'current_members' => $slot->current_members,
+                'current_members' => $slot->passwordSharingSlotMembers->where('payment_status', 'paid')->count(),
                 'guest_limit'     => $slot->guest_limit,
                 'payment_status'  => $slot->payment_status,
                 'is_active'       => $slot->is_active,
-                'service'         => $slot->service,
-                'members'         => $slot->members,
+                'service'         => $slot->passwordService,
+                'members'         => $slot->passwordSharingSlotMembers->where('payment_status', 'paid'),
                 'guest_price'     => $guestAmount,
             ];
 

@@ -25,7 +25,7 @@ class PasswordService extends Model
         'max_members' => 'integer',
     ];
 
-    public function slots(): HasMany
+    public function passwordSharingSlots(): HasMany
     {
         return $this->hasMany(PasswordSharingSlot::class);
     }

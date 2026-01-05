@@ -22,7 +22,7 @@ class PasswordSharingSlotMember extends Model
         'payment_id',
     ];
 
-    public function slot(): BelongsTo
+    public function passwordSharingSlot(): BelongsTo
     {
         return $this->belongsTo(PasswordSharingSlot::class, 'password_sharing_slot_id');
     }
