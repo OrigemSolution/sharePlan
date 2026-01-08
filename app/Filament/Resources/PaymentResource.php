@@ -64,11 +64,26 @@ class PaymentResource extends Resource
                     })
                     ->badge()
                     ->color(fn ($state) => $state === 'Password Sharing' ? 'success' : 'primary'),
-                Tables\Columns\TextColumn::make('passwordService.name')
+                 Tables\Columns\TextColumn::make('service_name')
                     ->label('Service')
-                    ->searchable()
                     ->getStateUsing(function ($record) {
-                        return $record->passwordService->name ?? 'N/A';
+                        if ($record->password_sharing_slot_id && $record->passwordSharingSlot) {
+                            return $record->passwordSharingSlot->passwordService->name ?? 'N/A';
+                        }
+                        if ($record->slot && $record->slot->service) {
+                            return $record->slot->service->name ?? 'N/A';
+                        }
+                        return 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function ($query) use ($search) {
+                            $query->whereHas('slot.service', function ($q) use ($search) {
+                                $q->where('name', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('passwordSharingSlot.passwordService', function ($q) use ($search) {
+                                $q->where('name', 'like', "%{$search}%");
+                            });
+                        });
                     }),
                 Tables\Columns\TextColumn::make('slot_id')
                     ->label('Slot ID')
