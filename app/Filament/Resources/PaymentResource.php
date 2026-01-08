@@ -63,23 +63,16 @@ class PaymentResource extends Resource
                         return 'Regular Slot';
                     })
                     ->badge()
-                    ->color(fn ($state) => $state === 'Password Sharing' ? 'success' : 'primary')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('service_name')
+                    ->color(fn ($state) => $state === 'Password Sharing' ? 'success' : 'primary'),
+                Tables\Columns\TextColumn::make('passwordService.name')
                     ->label('Service')
+                    ->searchable()
                     ->getStateUsing(function ($record) {
-                        if ($record->password_sharing_slot_id && $record->passwordSharingSlot) {
-                            return $record->passwordSharingSlot->service->name ?? 'N/A';
-                        }
-                        if ($record->slot && $record->slot->service) {
-                            return $record->slot->service->name ?? 'N/A';
-                        }
-                        return 'N/A';
-                    })
-                    ->searchable(),
+                        return $record->passwordService->name ?? 'N/A';
+                    }),
                 Tables\Columns\TextColumn::make('slot_id')
                     ->label('Slot ID')
+                    ->searchable()
                     ->getStateUsing(function ($record) {
                         if ($record->password_sharing_slot_id) {
                             return 'PS-' . $record->password_sharing_slot_id;
@@ -87,42 +80,15 @@ class PaymentResource extends Resource
                         return $record->slot_id ? 'S-' . $record->slot_id : 'N/A';
                     })
                     ->searchable(),
-                Tables\Columns\TextColumn::make('creator')
+                Tables\Columns\TextColumn::make('user.name')
                     ->label('Creator')
-                    ->getStateUsing(function ($record) {
-                        if ($record->password_sharing_slot_id && $record->passwordSharingSlot) {
-                            return $record->passwordSharingSlot->user->name ?? 'N/A';
-                        }
-                        if ($record->slot && $record->slot->creator) {
-                            return $record->slot->creator->name ?? 'N/A';
-                        }
-                        return 'N/A';
-                    })
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('payer_name')
-                    ->label('Payer Name')
-                    ->getStateUsing(function ($record) {
-                        if ($record->passwordSharingSlotMember) {
-                            return $record->passwordSharingSlotMember->member_name ?? 'N/A';
-                        }
-                        if ($record->slotMember) {
-                            return $record->slotMember->member_name ?? 'N/A';
-                        }
-                        return 'N/A';
-                    })
                     ->searchable(),
-                Tables\Columns\TextColumn::make('payer_email')
-                    ->label('Payer Email')
+                Tables\Columns\TextColumn::make('user.email')
+                    ->label('Email')
+                    ->searchable()
                     ->getStateUsing(function ($record) {
-                        if ($record->passwordSharingSlotMember) {
-                            return $record->passwordSharingSlotMember->member_email ?? 'N/A';
-                        }
-                        if ($record->slotMember) {
-                            return $record->slotMember->member_email ?? 'N/A';
-                        }
-                        return 'N/A';
-                    })
-                    ->searchable(),
+                        return $record->user->email ?? 'N/A';
+                    }),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount (₦)')
                     ->formatStateUsing(function ($state) {
@@ -131,22 +97,35 @@ class PaymentResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('reference')
                     ->label('Payment Reference')
+                    ->searchable()
                     ->copyable(),
-                Tables\Columns\TextColumn::make('status'),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'success' => 'success',
+                        'pending' => 'warning',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    })
+                    ->sortable()
+                    ->label('Status')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('payment_channel')
                     ->label('Channel')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
             ])
             ->modifyQueryUsing(function (Builder $query) {
                 return $query->with([
                     'slot.service',
                     'slot.creator',
                     'slotMember',
-                    'passwordSharingSlot.service',
+                    'passwordSharingSlot.passwordService',
                     'passwordSharingSlot.user',
                     'passwordSharingSlotMember',
                 ]);
@@ -176,6 +155,7 @@ class PaymentResource extends Resource
                     ])
                     ->searchable(),
                 Tables\Filters\SelectFilter::make('payment_channel')
+                    ->label('Channel')
                     ->searchable(),
             ])
             ->actions([
