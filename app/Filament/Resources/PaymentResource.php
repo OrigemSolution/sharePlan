@@ -98,11 +98,26 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Creator')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('user.email')
-                    ->label('Email')
-                    ->searchable()
+                Tables\Columns\TextColumn::make('payer_email')
+                    ->label('Payer Email')
                     ->getStateUsing(function ($record) {
-                        return $record->user->email ?? 'N/A';
+                        if ($record->passwordSharingSlotMember) {
+                            return $record->passwordSharingSlotMember->member_email ?? 'N/A';
+                        }
+                        if ($record->slotMember) {
+                            return $record->slotMember->member_email ?? 'N/A';
+                        }
+                        return 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function ($query) use ($search) {
+                            $query->whereHas('passwordSharingSlotMember', function ($q) use ($search) {
+                                $q->where('member_email', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('slotMember', function ($q) use ($search) {
+                                $q->where('member_email', 'like', "%{$search}%");
+                            });
+                        });
                     }),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Amount (₦)')
