@@ -24,49 +24,17 @@ class PasswordSharingSlotResource extends Resource
     protected static ?string $navigationGroup = 'Password Sharing';
     protected static ?int $navigationSort = 5;
 
-    public static function form(Form $form): Form
+    public static function canCreate(): bool
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('password_service_id')
-                    ->relationship('service', 'name')
-                    ->required(),
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
-                    ->required(),
-                Forms\Components\TextInput::make('guest_limit')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('current_members')
-                    ->required()
-                    ->numeric()
-                    ->default(1),
-                Forms\Components\TextInput::make('duration')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\Select::make('status')
-                    ->options([
-                        'open' => 'Open',
-                        'completed' => 'Completed',
-                        'cancelled' => 'Cancelled',
-                    ])
-                    ->required(),
-                Forms\Components\Select::make('payment_status')
-                    ->options([
-                        'paid' => 'Paid',
-                        'unpaid' => 'Unpaid',
-                    ])
-                    ->required(),
-                Forms\Components\Toggle::make('is_active')
-                    ->required(),
-            ]);
+        // Prevent creating new transactions
+        return false;
     }
-
+    
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('service.name')
+                Tables\Columns\TextColumn::make('passwordService.name')
                     ->sortable()
                     ->label('Password Service')
                     ->searchable(),
@@ -122,7 +90,7 @@ class PasswordSharingSlotResource extends Resource
     {
         return $infolist
             ->schema([
-                TextEntry::make('service.name')
+                TextEntry::make('passwordService.name')
                     ->label('Password Service'),
                 TextEntry::make('user.name')
                     ->label('Creator'),
