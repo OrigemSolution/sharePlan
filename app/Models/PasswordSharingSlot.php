@@ -40,6 +40,11 @@ class PasswordSharingSlot extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function members(): HasMany
+    {
+        return $this->hasMany(PasswordSharingSlotMember::class, 'password_sharing_slot_id');
+    }
+
     public function passwordSharingSlotMembers(): HasMany
     {
         return $this->hasMany(PasswordSharingSlotMember::class, 'password_sharing_slot_id');

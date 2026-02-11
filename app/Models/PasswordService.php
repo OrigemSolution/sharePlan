@@ -13,6 +13,7 @@ class PasswordService extends Model
     protected $fillable = [
         'name',
         'description',
+        'info',
         'logo',
         'price',
         'max_members',

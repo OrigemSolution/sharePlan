@@ -44,7 +44,7 @@ class MembersRelationManager extends RelationManager
                 // disable creation from admin
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                // Tables\Actions\ViewAction::make(),
             ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PasswordServiceResource\Pages;
 use App\Filament\Resources\PasswordServiceResource\RelationManagers;
+use App\Filament\Resources\PasswordServiceResource\RelationManagers\PasswordSharingSlotsRelationManager;
 use App\Models\PasswordService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -18,6 +19,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Infolists\Infolist;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ImageEntry;
+
 
 
 
@@ -37,6 +39,9 @@ class PasswordServiceResource extends Resource
                     ->required()
                     ->maxLength(255),
                 Forms\Components\Textarea::make('description')
+                    ->columnSpanFull(),
+                Forms\Components\Textarea::make('info')
+                    ->label('Info')
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('price')
                     ->required()
@@ -90,6 +95,8 @@ class PasswordServiceResource extends Resource
                     ->label('Name'),
                 TextEntry::make('description')
                     ->label('Description'),
+                TextEntry::make('info')
+                    ->label('Info'),
                 TextEntry::make('price')
                     ->label('Price')
                     ->money('NGN'),
@@ -102,7 +109,7 @@ class PasswordServiceResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            PasswordSharingSlotsRelationManager::class,
         ];
     }
 

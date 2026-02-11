@@ -9,6 +9,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\UserResource;
+
 
 class MembersRelationManager extends RelationManager
 {
@@ -58,15 +60,15 @@ class MembersRelationManager extends RelationManager
                     ->searchable(),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                // disable creation from admin
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Tables\Actions\ViewAction::make()
+                // ->url(fn ($record) => UserResource::getUrl('view', ['record' => $record->id])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // disable deletion from admin
                 ]),
             ]);
     }
