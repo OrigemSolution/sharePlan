@@ -36,6 +36,7 @@ class ServiceController extends Controller
             'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'max_members' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
+            'individual_price' => 'required|numeric|min:0',
             'is_active' => 'required|boolean'
         ]);
 
@@ -57,6 +58,7 @@ class ServiceController extends Controller
                 'logo' => $logoPath,
                 'max_members' => $request->max_members,
                 'price' => $request->price,
+                'individual_price' => $request->individual_price,
                 'is_active' => $request->is_active,
             ]);
 
@@ -101,6 +103,7 @@ class ServiceController extends Controller
             'logo' => 'sometimes|required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'max_members' => 'sometimes|required|integer|min:1',
             'price' => 'sometimes|required|numeric|min:0',
+            'individual_price' => 'sometimes|required|numeric|min:0',
             'is_active' => 'sometimes|required|boolean'
         ]);
 

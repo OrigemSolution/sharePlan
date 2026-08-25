@@ -40,6 +40,9 @@ class ServiceResource extends Resource
                 Forms\Components\TextInput::make('price')
                     ->required()
                     ->numeric(),
+                Forms\Components\TextInput::make('individual_price')
+                    ->required()
+                    ->numeric(),
                 Forms\Components\TextInput::make('max_members')
                     ->required()
                     ->numeric(),
@@ -58,6 +61,10 @@ class ServiceResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
+                    ->searchable()
+                    ->money('NGN')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('individual_price')
                     ->searchable()
                     ->money('NGN')
                     ->sortable(),
@@ -94,6 +101,9 @@ class ServiceResource extends Resource
                     ->label('Description'),
                 TextEntry::make('price')
                     ->label('Price')
+                    ->money('NGN'),
+                TextEntry::make('individual_price')
+                    ->label('Individual Price')
                     ->money('NGN'),
                 TextEntry::make('max_members')
                     ->label('Max Members'),

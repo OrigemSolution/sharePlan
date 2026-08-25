@@ -16,11 +16,13 @@ class Service extends Model
         'logo',
         'max_members',
         'price',
+        'individual_price',
         'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
+        'individual_price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
