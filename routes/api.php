@@ -33,6 +33,7 @@ Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
 
 // Contact routes
 Route::post('/contact', [ContactController::class, 'store']);
+Route::post('/contact/requested', [ContactController::class, 'storeRequested']);
 
 //public service routes (Guests)
 Route::get('/services', [ServiceController::class, 'index']);

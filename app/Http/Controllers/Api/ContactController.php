@@ -44,6 +44,37 @@ class ContactController extends Controller
     }
 
     /**
+     * Store what subscriptions people want but can't find
+     */
+    public function storeRequested(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'message' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $contact = Contact::create([
+            'name' => "Guest User",
+            'email' => "[EMAIL_ADDRESS]",
+            'subject' => "Requested Plan",
+            'message' => $request->message,
+            'status' => 'new'
+        ]); 
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Your suggestion has been sent successfully',
+            'data' => $contact
+        ], 201);
+    }
+
+    /**
      * Get all contact messages (admin only).
      */
     public function index()
