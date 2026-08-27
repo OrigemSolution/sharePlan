@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\User\SlotController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Api\User\PasswordSharingController;
+use App\Http\Controllers\Api\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,10 @@ Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
 // Contact routes
 Route::post('/contact', [ContactController::class, 'store']);
 Route::post('/contact/requested', [ContactController::class, 'storeRequested']);
+
+// Review routes
+Route::get('/reviews', [ReviewController::class, 'index']);
+Route::post('/review/create', [ReviewController::class, 'store']);
 
 //public service routes (Guests)
 Route::get('/services', [ServiceController::class, 'index']);
