@@ -50,6 +50,7 @@ class ContactController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'message' => 'required|string',
+            'email' => 'required|email'
         ]);
 
         if ($validator->fails()) {
@@ -61,7 +62,7 @@ class ContactController extends Controller
 
         $contact = Contact::create([
             'name' => "Guest User",
-            'email' => "[EMAIL_ADDRESS]",
+            'email' => $request->email,
             'subject' => "Requested Plan",
             'message' => $request->message,
             'status' => 'new'
