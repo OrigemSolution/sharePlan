@@ -43,8 +43,6 @@ class SlotResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('duration')
                     ->required(),
-                Forms\Components\TextInput::make('current_members')
-                    ->required(),
                 Forms\Components\Select::make('status')
                     ->options([
                         'open' => 'Open',

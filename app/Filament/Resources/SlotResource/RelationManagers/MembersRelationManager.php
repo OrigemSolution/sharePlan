@@ -10,6 +10,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\UserResource;
+use App\Models\Slot;
+use App\Models\SlotMember;
+use Illuminate\Database\Eloquent\Collection;
 
 
 class MembersRelationManager extends RelationManager
@@ -63,12 +66,25 @@ class MembersRelationManager extends RelationManager
                 // disable creation from admin
             ])
             ->actions([
-                // Tables\Actions\ViewAction::make()
-                // ->url(fn ($record) => UserResource::getUrl('view', ['record' => $record->id])),
+                Tables\Actions\DeleteAction::make()
+                    ->after(function (SlotMember $record) {
+                        $slot = $record->slot ?? Slot::find($record->slot_id);
+                        if ($slot && $slot->current_members > 0) {
+                            $slot->decrement('current_members');
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    // disable deletion from admin
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->after(function (Collection $records) {
+                            foreach ($records as $record) {
+                                $slot = $record->slot ?? Slot::find($record->slot_id);
+                                if ($slot && $slot->current_members > 0) {
+                                    $slot->decrement('current_members');
+                                }
+                            }
+                        }),
                 ]),
             ]);
     }
